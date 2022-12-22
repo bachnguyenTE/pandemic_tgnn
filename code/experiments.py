@@ -74,7 +74,7 @@ if __name__ == '__main__':
     meta_labs, meta_graphs, meta_features, meta_y = read_meta_datasets(args.window)
     
     
-    for country in ["IT","ES","FR","EN"]:#,",
+    for country in ["IT","ES","FR","EN","NZ"]:#,",
         if(country=="IT"):
             idx = 0
 
@@ -83,8 +83,12 @@ if __name__ == '__main__':
 
         elif(country=="EN"):
             idx = 2
+	
+	elif(country=="FR"):
+            idx = 3
+	
         else:
-            idx= 3
+            idx = 4
             
             
         labels = meta_labs[idx]
