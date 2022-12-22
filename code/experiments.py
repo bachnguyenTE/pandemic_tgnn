@@ -96,12 +96,12 @@ if __name__ == '__main__':
         
         n_nodes = gs_adj[0].shape[0]
         print(n_nodes)
-         if not os.path.exists('../results'):
+        if not os.path.exists('../results'):
             os.makedirs('../results')
         fw = open("../results/results_"+country+".csv","a")
 
         
-        for args.model in ["PROPHET","ARIMA","AVG_WINDOW","AVG","MPNN","MPNN_LSTM","LSTM"]:#
+        for args.model in ["MPNN_LSTM","LSTM"]:#
             
             if(args.model=="PROPHET"):
 
