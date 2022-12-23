@@ -74,7 +74,7 @@ if __name__ == '__main__':
     meta_labs, meta_graphs, meta_features, meta_y = read_meta_datasets(args.window)
     
     
-    for country in ["IT","ES","FR","EN","NZ"]:#,",
+    for country in ["NZ","IT","ES","FR","EN"]:#,",
         if(country=="IT"):
             idx = 0
 
@@ -83,8 +83,8 @@ if __name__ == '__main__':
 
         elif(country=="EN"):
             idx = 2
-	
-	elif(country=="FR"):
+
+        elif(country=="FR"):
             idx = 3
 	
         else:
@@ -105,7 +105,7 @@ if __name__ == '__main__':
         fw = open("../results/results_"+country+".csv","a")
 
         
-        for args.model in ["MPNN_LSTM","LSTM"]:#
+        for args.model in ["MPNN_LSTM"]:#
             
             if(args.model=="PROPHET"):
 
