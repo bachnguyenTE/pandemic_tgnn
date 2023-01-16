@@ -19,7 +19,7 @@ import pandas as pd
 
 
 from utils import generate_new_features, generate_new_batches, AverageMeter,generate_batches_lstm, read_meta_datasets
-from models import MPNN_LSTM, LSTM, MPNN, prophet, arima
+from models_multiresolution import MGNN, ATMGNN
         
 
     
@@ -48,7 +48,7 @@ if __name__ == '__main__':
                         help='Initial learning rate.')
     parser.add_argument('--hidden', type=int, default=64,
                         help='Number of hidden units.')
-    parser.add_argument('--batch-size', type=int, default=8,
+    parser.add_argument('--batch-size', type=int, default=16,
                         help='Size of batch.')
     parser.add_argument('--dropout', type=float, default=0.5,
                         help='Dropout rate.')
@@ -74,7 +74,7 @@ if __name__ == '__main__':
     meta_labs, meta_graphs, meta_features, meta_y = read_meta_datasets(args.window)
     
     
-    for country in ["IT","ES","FR","EN"]:#,",
+    for country in ["NZ"]:#,",
         if(country=="IT"):
             idx = 0
 
@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
         elif(country=="FR"):
             idx = 3
-	
+
         else:
             idx = 4
             
@@ -102,35 +102,15 @@ if __name__ == '__main__':
         print(n_nodes)
         if not os.path.exists('../results'):
             os.makedirs('../results')
-        fw = open("../results/results_"+country+".csv","a")
 
         
-        for args.model in ["LSTM", "MPNN"]:#
-            
-            if(args.model=="PROPHET"):
-
-                error, var = prophet(args.ahead,args.start_exp,n_samples,labels)
-                count = len(range(args.start_exp,n_samples-args.ahead))
-                for idx,e in enumerate(error):
-                    #fw.write(args.model+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
-                    fw.write("PROPHET,"+str(idx)+",{:.5f}".format(e/(count*n_nodes))+",{:.5f}".format(np.std(var[idx]))+"\n")
-                continue
-
-
-            if(args.model=="ARIMA"):
-
-                error, var = arima(args.ahead,args.start_exp,n_samples,labels)
-                count = len(range(args.start_exp,n_samples-args.ahead))
-
-                for idx,e in enumerate(error):
-                    fw.write("ARIMA,"+str(idx)+",{:.5f}".format(e/(count*n_nodes))+",{:.5f}".format(np.std(var[idx]))+"\n")
-                continue
-
+        for args.model in ["MGNN","ATMGNN"]:#
 			#---- predict days ahead , 0-> next day etc.
             for shift in list(range(0,args.ahead)):
 
                 result = []
                 exp = 0
+                fw = open("../results/results_"+country+".csv","a")
 
                 for test_sample in range(args.start_exp,n_samples-shift):#
                     exp+=1
@@ -144,46 +124,7 @@ if __name__ == '__main__':
                     idx_train = idx_train+list(range(test_sample-args.sep+1,test_sample,2))
 
                     #--------------------- Baselines
-                    if(args.model=="AVG"):
-                        avg = labels.iloc[:,:test_sample-1].mean(axis=1)
-                        targets_lab = labels.iloc[:,test_sample+shift]
-                        error = np.sum(abs(avg - targets_lab))/n_nodes
-                        print(error)
-                        result.append(error)
-                        continue        
-                        
-                    
-                    if(args.model=="LAST_DAY"):
-                        win_lab = labels.iloc[:,test_sample-1]
-                        #print(win_lab[1])
-                        targets_lab = labels.iloc[:,test_sample+shift]#:(test_sample+1)]
-                        error = np.sum(abs(win_lab - targets_lab))/n_nodes#/avg)
-                        if(not np.isnan(error)):
-                            result.append(error)
-                        else:
-                            exp-=1
-                        continue   
-
-                    
-                    if(args.model=="AVG_WINDOW"):
-                        win_lab = labels.iloc[:,(test_sample-args.window):test_sample]
-                        targets_lab = labels.iloc[:,test_sample+shift]#:
-                        error = np.sum(abs(win_lab.mean(1) - targets_lab))/n_nodes
-                        if(not np.isnan(error)):
-                            result.append(error)
-                        else:
-                            exp-=1
-                        continue   
-
-
-                    if(args.model=="LSTM"):
-                        lstm_features = 1*n_nodes
-                        adj_train, features_train, y_train = generate_batches_lstm(n_nodes, y, idx_train, args.window, shift,  args.batch_size,device,test_sample)
-                        adj_val, features_val, y_val = generate_batches_lstm(n_nodes, y, idx_train, args.window, shift, args.batch_size,device,test_sample)
-                        adj_test, features_test, y_test = generate_batches_lstm(n_nodes, y, [test_sample],  args.window, shift,  args.batch_size,device,test_sample)
-
-
-                    elif(args.model=="MPNN_LSTM"):
+                    if(args.model=="ATMGNN"):
                         adj_train, features_train, y_train = generate_new_batches(gs_adj, features, y, idx_train, args.graph_window, shift, args.batch_size,device,test_sample)
                         adj_val, features_val, y_val = generate_new_batches(gs_adj, features, y, idx_val, args.graph_window,  shift,args.batch_size, device,test_sample)
                         adj_test, features_test, y_test = generate_new_batches(gs_adj, features, y,  [test_sample], args.graph_window,shift, args.batch_size, device,test_sample)
@@ -203,17 +144,13 @@ if __name__ == '__main__':
                     # Model and optimizer
                     stop = False#
                     while(not stop):#
-                        if(args.model=="LSTM"):
+                        if(args.model=="ATMGNN"):
 
-                            model = LSTM(nfeat=lstm_features, nhid=args.hidden, n_nodes=n_nodes, window=args.window, dropout=args.dropout,batch_size = args.batch_size, recur=args.recur).to(device)
+                            model = ATMGNN(nfeat=nfeat, nhid=args.hidden, nout=1, n_nodes=n_nodes, window=args.graph_window, dropout=args.dropout, nhead=1).to(device)
 
-                        elif(args.model=="MPNN_LSTM"):
+                        elif(args.model=="MGNN"):
 
-                            model = MPNN_LSTM(nfeat=nfeat, nhid=args.hidden, nout=1, n_nodes=n_nodes, window=args.graph_window, dropout=args.dropout).to(device)
-
-                        elif(args.model=="MPNN"):
-
-                            model = MPNN(nfeat=nfeat, nhid=args.hidden, nout=1, dropout=args.dropout).to(device)
+                            model = MGNN(nfeat=nfeat, nhid=args.hidden, nout=1, dropout=args.dropout).to(device)
 
                         optimizer = optim.Adam(model.parameters(), lr=args.lr)
                         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=10)
@@ -294,12 +231,8 @@ if __name__ == '__main__':
                     #for batch in range(n_test_batches):
                     output, loss = test(adj_test[0], features_test[0], y_test[0])
 
-                    if(args.model=="LSTM"):
-                        o = output.view(-1).cpu().detach().numpy()
-                        l = y_test[0].view(-1).cpu().numpy()
-                    else:
-                        o = output.cpu().detach().numpy()
-                        l = y_test[0].cpu().numpy()
+                    o = output.cpu().detach().numpy()
+                    l = y_test[0].cpu().numpy()
 
 	            # average error per region
                     error = np.sum(abs(o-l))/n_nodes
@@ -313,8 +246,5 @@ if __name__ == '__main__':
 
                 fw.write(str(args.model)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
                 #fw.write(hypers+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
-
-    fw.close()
-
-
+                fw.close()
 

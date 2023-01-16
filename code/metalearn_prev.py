@@ -84,24 +84,20 @@ if __name__ == '__main__':
     meta_labs, meta_graphs, meta_features, meta_y = read_meta_datasets(args.window)
 
     for args.country in ["NZ","IT","ES","EN","FR"]:#,",
-
-        if(args.country=="NZ"):
-            meta_train = [0,1,2,3]
-            meta_test = 4
         
         if(args.country=="IT"):
-            meta_train = [1,2,3,4]
+            meta_train = [1,2,3]
             meta_test = 0
 
         elif(args.country=="ES"):
-            meta_train = [0,2,3,4]
+            meta_train = [0,2,3]
             meta_test = 1
 
         elif(args.country=="EN"):
-            meta_train = [0,1,3,4]
+            meta_train = [0,1,3]
             meta_test = 2
         else:
-            meta_train = [0,1,2,4]
+            meta_train = [0,1,2]
             meta_test = 3
 
         nfeat = meta_features[0][0].shape[1]
@@ -175,6 +171,7 @@ if __name__ == '__main__':
                     print("meta train set "+str(train_idx)+" test sample "+str(test_sample)+" theta generalization=", '%03d'%loss.cpu().detach().numpy())
                  
 			#------------ Take delta from the meta training 
+                    print(model)
                     w1 = model.conv1.weight.grad.clone()
                     b1 = model.bn1.weight.grad.clone()
                     
