@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv
+from torch_geometric.nn.conv import GCNConv
 import networkx as nx
 import numpy as np
 import scipy.sparse as sp

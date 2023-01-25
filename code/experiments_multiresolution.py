@@ -19,7 +19,7 @@ import pandas as pd
 
 
 from utils import generate_new_features, generate_new_batches, AverageMeter,generate_batches_lstm, read_meta_datasets
-from models_multiresolution import MGNN, ATMGNN
+from models_multiresolution import MGNN, ATMGNN, TMGNN
         
 
     
@@ -48,7 +48,7 @@ if __name__ == '__main__':
                         help='Initial learning rate.')
     parser.add_argument('--hidden', type=int, default=64,
                         help='Number of hidden units.')
-    parser.add_argument('--batch-size', type=int, default=16,
+    parser.add_argument('--batch-size', type=int, default=32,
                         help='Size of batch.')
     parser.add_argument('--dropout', type=float, default=0.5,
                         help='Dropout rate.')
@@ -104,7 +104,7 @@ if __name__ == '__main__':
             os.makedirs('../results')
 
         
-        for args.model in ["MGNN","ATMGNN"]:#
+        for args.model in ["TMGNN"]:#
 			#---- predict days ahead , 0-> next day etc.
             for shift in list(range(0,args.ahead)):
 
@@ -124,7 +124,7 @@ if __name__ == '__main__':
                     idx_train = idx_train+list(range(test_sample-args.sep+1,test_sample,2))
 
                     #--------------------- Baselines
-                    if(args.model=="ATMGNN"):
+                    if(args.model=="ATMGNN" or args.model=="TMGNN"):
                         adj_train, features_train, y_train = generate_new_batches(gs_adj, features, y, idx_train, args.graph_window, shift, args.batch_size,device,test_sample)
                         adj_val, features_val, y_val = generate_new_batches(gs_adj, features, y, idx_val, args.graph_window,  shift,args.batch_size, device,test_sample)
                         adj_test, features_test, y_test = generate_new_batches(gs_adj, features, y,  [test_sample], args.graph_window,shift, args.batch_size, device,test_sample)
@@ -147,6 +147,10 @@ if __name__ == '__main__':
                         if(args.model=="ATMGNN"):
 
                             model = ATMGNN(nfeat=nfeat, nhid=args.hidden, nout=1, n_nodes=n_nodes, window=args.graph_window, dropout=args.dropout, nhead=1).to(device)
+
+                        elif(args.model=="TMGNN"):
+
+                            model = TMGNN(nfeat=nfeat, nhid=args.hidden, nout=1, n_nodes=n_nodes, window=args.graph_window, dropout=args.dropout).to(device)
 
                         elif(args.model=="MGNN"):
 

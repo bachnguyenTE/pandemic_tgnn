@@ -53,7 +53,7 @@ if __name__ == '__main__':
                         help='Initial learning rate.')
     parser.add_argument('--hidden', type=int, default=64,
                         help='Number of hidden units.')
-    parser.add_argument('--batch-size', type=int, default=8,
+    parser.add_argument('--batch-size', type=int, default=32,
                         help='Size of batch.')
     parser.add_argument('--dropout', type=float, default=0.5,
                         help='Dropout rate.')
@@ -127,6 +127,7 @@ if __name__ == '__main__':
             os.makedirs('../results')
         fw = open("../results/results_"+args.country+"_tl_.csv","a")#results/
         fw.write("shift,loss,loss_std\n")
+        fw.close()
         
         #------ Initialize the model
         model = MPNN(nfeat=nfeat, nhid=args.hidden, nout=1, dropout=args.dropout).to(device)
@@ -175,10 +176,12 @@ if __name__ == '__main__':
                     print("meta train set "+str(train_idx)+" test sample "+str(test_sample)+" theta generalization=", '%03d'%loss.cpu().detach().numpy())
                  
 			#------------ Take delta from the meta training 
-                    w1 = model.conv1.weight.grad.clone()
+                    weight_dict = model.state_dict()
+
+                    w1 = model.conv1.lin.weight.grad.clone()
                     b1 = model.bn1.weight.grad.clone()
                     
-                    w2 = model.conv2.weight.grad.clone()
+                    w2 = model.conv2.lin.weight.grad.clone()
                     b2 = model.bn2.weight.grad.clone()
                     
                     f1 = model.fc1.weight.grad.clone()
@@ -190,9 +193,9 @@ if __name__ == '__main__':
                     #----------- Update eta (one gradient per test sample)
                     checkpoint = torch.load(model_eta) 
                     model.load_state_dict(checkpoint['state_dict'])
-                    model.conv1.weight.data -= args.meta_lr*w1/norm_grad
+                    model.conv1.lin.weight.data -= args.meta_lr*w1/norm_grad
                     model.bn1.weight.data -= args.meta_lr*b1/norm_grad
-                    model.conv2.weight.data -= args.meta_lr*w2/norm_grad
+                    model.conv2.lin.weight.data -= args.meta_lr*w2/norm_grad
                     model.bn2.weight.data -= args.meta_lr*b2/norm_grad
                     model.fc1.weight.data -= args.meta_lr*f1/norm_grad
                     model.fc2.weight.data -= args.meta_lr*f2/norm_grad
@@ -329,7 +332,6 @@ if __name__ == '__main__':
             
             print("{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(  np.sum(labels.iloc[:,args.start_exp:test_sample].mean(1))))
 
+            fw = open("../results/results_"+args.country+"_tl_.csv","a")
             fw.write(str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
-        
-        fw.close()
-
+            fw.close()

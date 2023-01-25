@@ -48,7 +48,7 @@ if __name__ == '__main__':
                         help='Initial learning rate.')
     parser.add_argument('--hidden', type=int, default=64,
                         help='Number of hidden units.')
-    parser.add_argument('--batch-size', type=int, default=8,
+    parser.add_argument('--batch-size', type=int, default=64,
                         help='Size of batch.')
     parser.add_argument('--dropout', type=float, default=0.5,
                         help='Dropout rate.')
@@ -74,7 +74,7 @@ if __name__ == '__main__':
     meta_labs, meta_graphs, meta_features, meta_y = read_meta_datasets(args.window)
     
     
-    for country in ["IT","ES","FR","EN"]:#,",
+    for country in ["NZ"]:#,",
         if(country=="IT"):
             idx = 0
 
@@ -105,7 +105,7 @@ if __name__ == '__main__':
         fw = open("../results/results_"+country+".csv","a")
 
         
-        for args.model in ["LSTM", "MPNN"]:#
+        for args.model in ["MPNN_LSTM"]:#
             
             if(args.model=="PROPHET"):
 

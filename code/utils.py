@@ -182,8 +182,8 @@ def read_meta_datasets(window):
     #del labels["id"]
     labels = labels.set_index("name")
 
-    sdate = date(2022, 1, 1)
-    edate = date(2022, 11, 4)
+    sdate = date(2022, 3, 4)
+    edate = date(2022, 9, 4)
     
     #--- series of graphs and their respective dates
     delta = edate - sdate
