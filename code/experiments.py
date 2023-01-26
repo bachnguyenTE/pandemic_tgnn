@@ -102,10 +102,9 @@ if __name__ == '__main__':
         print(n_nodes)
         if not os.path.exists('../results'):
             os.makedirs('../results')
-        fw = open("../results/results_"+country+".csv","a")
 
         
-        for args.model in ["MPNN_LSTM"]:#
+        for args.model in ["MPNN"]:#
             
             if(args.model=="PROPHET"):
 
@@ -274,7 +273,7 @@ if __name__ == '__main__':
                                 torch.save({
                                     'state_dict': model.state_dict(),
                                     'optimizer' : optimizer.state_dict(),
-                                }, 'model_best.pth.tar')
+                                }, 'model_best_{}_shift{}.pth.tar'.format(args.model, shift))
 
                             scheduler.step(val_loss)
 
@@ -285,7 +284,7 @@ if __name__ == '__main__':
                     test_loss = AverageMeter()
 
                     #print("Loading checkpoint!")
-                    checkpoint = torch.load('model_best.pth.tar')
+                    checkpoint = torch.load('model_best_{}_shift{}.pth.tar'.format(args.model, shift))
                     model.load_state_dict(checkpoint['state_dict'])
                     optimizer.load_state_dict(checkpoint['optimizer'])
                     model.eval()
@@ -311,10 +310,7 @@ if __name__ == '__main__':
 
                 print("{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(  np.sum(labels.iloc[:,args.start_exp:test_sample].mean(1))))
 
+                fw = open("../results/results_"+country+".csv","a")
                 fw.write(str(args.model)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
                 #fw.write(hypers+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
-
-    fw.close()
-
-
-
+                fw.close()

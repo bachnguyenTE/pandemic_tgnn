@@ -194,6 +194,9 @@ def read_meta_datasets(window):
     
     
     Gs = generate_graphs_tmp(dates,"NZ")
+    print("Nodes in Gs: {}".format(Gs[0].nodes()))
+    print("Nodes in Gs: {}".format(Gs[1].nodes()))
+    print("Nodes in Gs: {}".format(Gs[2].nodes()))
     gs_adj = [nx.adjacency_matrix(kgs).toarray().T for kgs in Gs]
 
     labels = labels.loc[list(Gs[0].nodes()),:]
@@ -239,7 +242,7 @@ def generate_graphs_tmp(dates,country):
 
 
 
-def generate_new_features(Gs, labels, dates, window=7, scaled=False):
+def generate_new_features(Gs, labels, dates, window=7, scaled=False, economic=False, econ_feat=0):
     """
     Generate node features
     Features[1] contains the features corresponding to y[1]
@@ -263,12 +266,18 @@ def generate_new_features(Gs, labels, dates, window=7, scaled=False):
     for idx,G in enumerate(Gs):
         #  Features = population, coordinates, d past cases, one hot region
         
-        H = np.zeros([G.number_of_nodes(),window]) #+3+n_departments])#])#])
+        if economic: # adding additional elements equal length of economic features
+            H = np.zeros([G.number_of_nodes(), window+econ_feat])
+        else: 
+            H = np.zeros([G.number_of_nodes(),window])
+
         me = labs.loc[:, dates[:(idx)]].mean(1)
         sd = labs.loc[:, dates[:(idx)]].std(1)+1
 
         ### enumarate because H[i] and labs[node] are not aligned
         for i,node in enumerate(G.nodes()):
+            # print("i: {}".format(i))
+            # print("node: {}".format(node))
             #---- Past cases      
             if(idx < window):# idx-1 goes before the start of the labels
                 if(scaled):
@@ -282,8 +291,16 @@ def generate_new_features(Gs, labels, dates, window=7, scaled=False):
                     H[i,0:(window)] =  (labs.loc[node, dates[(idx-window):(idx)]] - me[node])/ sd[node]
                 else:
                     H[i,0:(window)] = labs.loc[node, dates[(idx-window):(idx)]]
+
+            if economic:
+                cat = 0
+                # do some kind of matching here so that the economic data is appended to the second dimension of H
+                # currently the shape of H (each feature vector at timestep) is (20, 7) aka (#regions, #time_feature)
+                # get the economic data vectors from another file, then build a dictionary (keys are region names), then match and append to the feature vector of each corresponding region
+                # perform matching inside the for loop since the variable 'node' is exactly the name of the region to be matched
       
-            
+        print(H)
+        # print("Shape of H: {}".format(H.shape))
         features.append(H)
         
     return features
