@@ -194,9 +194,6 @@ def read_meta_datasets(window):
     
     
     Gs = generate_graphs_tmp(dates,"NZ")
-    print("Nodes in Gs: {}".format(Gs[0].nodes()))
-    print("Nodes in Gs: {}".format(Gs[1].nodes()))
-    print("Nodes in Gs: {}".format(Gs[2].nodes()))
     gs_adj = [nx.adjacency_matrix(kgs).toarray().T for kgs in Gs]
 
     labels = labels.loc[list(Gs[0].nodes()),:]
@@ -205,7 +202,7 @@ def read_meta_datasets(window):
 
     meta_graphs.append(gs_adj)
 
-    features = generate_new_features(Gs ,labels ,dates ,window)
+    features = generate_new_features(Gs ,labels ,dates ,window, economic=False, econ_feat=21)
 
     meta_features.append(features)
 
@@ -229,6 +226,7 @@ def generate_graphs_tmp(dates,country):
         d = pd.read_csv("graphs/"+country+"_"+date+".csv",header=None)
         G = nx.DiGraph()
         nodes = set(d[0].unique()).union(set(d[1].unique()))
+        nodes = sorted(nodes)
         G.add_nodes_from(nodes)
 
         for row in d.iterrows():
@@ -267,7 +265,15 @@ def generate_new_features(Gs, labels, dates, window=7, scaled=False, economic=Fa
         #  Features = population, coordinates, d past cases, one hot region
         
         if economic: # adding additional elements equal length of economic features
-            H = np.zeros([G.number_of_nodes(), window+econ_feat])
+            H = np.zeros([G.number_of_nodes(),window+econ_feat])
+            econ_data = pd.read_csv("gdp_2020_dhb.csv")
+            econ_data = econ_data.set_index("name")
+            econ_data["ARR"] = econ_data["COMBINED"].apply(lambda x: np.fromstring(
+                x.replace('\n','')
+                .replace('[','')
+                .replace(']','')
+                .replace('  ',' '), sep=' '
+            ))
         else: 
             H = np.zeros([G.number_of_nodes(),window])
 
@@ -293,14 +299,13 @@ def generate_new_features(Gs, labels, dates, window=7, scaled=False, economic=Fa
                     H[i,0:(window)] = labs.loc[node, dates[(idx-window):(idx)]]
 
             if economic:
-                cat = 0
                 # do some kind of matching here so that the economic data is appended to the second dimension of H
                 # currently the shape of H (each feature vector at timestep) is (20, 7) aka (#regions, #time_feature)
                 # get the economic data vectors from another file, then build a dictionary (keys are region names), then match and append to the feature vector of each corresponding region
                 # perform matching inside the for loop since the variable 'node' is exactly the name of the region to be matched
+                econ_row = econ_data.loc[node]["ARR"]
+                H[i,(window):(window+econ_feat)] = np.fromstring(econ_row)
       
-        print(H)
-        # print("Shape of H: {}".format(H.shape))
         features.append(H)
         
     return features

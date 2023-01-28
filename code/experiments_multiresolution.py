@@ -96,7 +96,7 @@ if __name__ == '__main__':
         features = meta_features[idx]
         y = meta_y[idx]
         n_samples= len(gs_adj)
-        nfeat = meta_features[0][0].shape[1]
+        nfeat = meta_features[idx][0].shape[1]
         
         n_nodes = gs_adj[0].shape[0]
         print(n_nodes)
@@ -104,7 +104,7 @@ if __name__ == '__main__':
             os.makedirs('../results')
 
         
-        for args.model in ["MGNN"]:#
+        for args.model in ["TMGNN"]:#
 			#---- predict days ahead , 0-> next day etc.
             for shift in list(range(0,args.ahead)):
 
