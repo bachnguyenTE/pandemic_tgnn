@@ -121,7 +121,7 @@ if __name__ == '__main__':
 
             if(args.model=="ARIMA"):
 
-                error, var = arima(args.ahead,args.start_exp,n_samples,labels)
+                error, var, y_pred, y_true = arima(args.ahead,args.start_exp,n_samples,labels)
                 count = len(range(args.start_exp,n_samples-args.ahead))
 
                 for idx,e in enumerate(error):

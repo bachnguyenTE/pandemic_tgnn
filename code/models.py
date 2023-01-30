@@ -55,7 +55,7 @@ def arima(ahead,start_exp,n_samples,labels):
 
         for idx in range(ahead):
             var[idx].append(err[idx])
-    return error, var
+    return error, var, y_pred, y_true
 
 
 
