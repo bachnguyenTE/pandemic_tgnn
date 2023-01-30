@@ -23,6 +23,8 @@ datas = collect_data_files('prophet')
             
 def arima(ahead,start_exp,n_samples,labels):
     var = []
+    y_pred = []
+    y_true = []
     for idx in range(ahead):
         var.append([])
 
@@ -48,6 +50,8 @@ def arima(ahead,start_exp,n_samples,labels):
             e =  abs(yhat - y_me.values)
             err += e
             error += e
+            y_pred.append(yhat)
+            y_true.append(y_me.value)
 
         for idx in range(ahead):
             var[idx].append(err[idx])
@@ -57,6 +61,8 @@ def arima(ahead,start_exp,n_samples,labels):
 
 def prophet(ahead, start_exp, n_samples, labels):
     var = []
+    y_pred = []
+    y_true = []
     for idx in range(ahead):
         var.append([])
 
@@ -78,10 +84,12 @@ def prophet(ahead, start_exp, n_samples, labels):
             e =  abs(yhat-y_me.values).values
             err += e
             error += e
+            y_pred.append(yhat)
+            y_true.append(y_me.value)
         for idx in range(ahead):
             var[idx].append(err[idx])
             
-    return error, var
+    return error, var, y_pred, y_true
             
             
             

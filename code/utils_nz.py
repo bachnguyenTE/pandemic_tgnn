@@ -110,6 +110,7 @@ def generate_graphs_tmp(dates,country):
         d = pd.read_csv("graphs/"+country+"_"+date+".csv",header=None)
         G = nx.DiGraph()
         nodes = set(d[0].unique()).union(set(d[1].unique()))
+        nodes = sorted(nodes)
         G.add_nodes_from(nodes)
 
         for row in d.iterrows():

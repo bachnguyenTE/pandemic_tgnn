@@ -20,6 +20,7 @@ import pandas as pd
 
 from utils import generate_new_features, generate_new_batches, AverageMeter,generate_batches_lstm, read_meta_datasets
 from models import MPNN_LSTM, LSTM, MPNN, prophet, arima
+from sklearn.metrics import mean_absolute_error, mean_squared_error, explained_variance_score
         
 
     
@@ -104,15 +105,17 @@ if __name__ == '__main__':
             os.makedirs('../results')
 
         
-        for args.model in ["MPNN"]:#
+        for args.model in ["PROPHET", "ARIMA"]:#
             
             if(args.model=="PROPHET"):
 
-                error, var = prophet(args.ahead,args.start_exp,n_samples,labels)
+                error, var, y_pred, y_true = prophet(args.ahead,args.start_exp,n_samples,labels)
                 count = len(range(args.start_exp,n_samples-args.ahead))
                 for idx,e in enumerate(error):
+                    fw = open("../results/results_"+country+"_baseline.csv","a")
                     #fw.write(args.model+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
-                    fw.write("PROPHET,"+str(idx)+",{:.5f}".format(e/(count*n_nodes))+",{:.5f}".format(np.std(var[idx]))+"\n")
+                    fw.write("PROPHET,"+str(idx)+",{:.5f}".format(e/(count*n_nodes))+",{:.5f}".format(np.std(var[idx]))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(explained_variance_score(y_true, y_pred))+"\n")
+                    fw.close()
                 continue
 
 
@@ -122,7 +125,10 @@ if __name__ == '__main__':
                 count = len(range(args.start_exp,n_samples-args.ahead))
 
                 for idx,e in enumerate(error):
-                    fw.write("ARIMA,"+str(idx)+",{:.5f}".format(e/(count*n_nodes))+",{:.5f}".format(np.std(var[idx]))+"\n")
+                    fw = open("../results/results_"+country+"_baseline.csv","a")
+                    #fw.write(args.model+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
+                    fw.write("ARIMA,"+str(idx)+",{:.5f}".format(e/(count*n_nodes))+",{:.5f}".format(np.std(var[idx]))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(explained_variance_score(y_true, y_pred))+"\n")
+                    fw.close()
                 continue
 
 			#---- predict days ahead , 0-> next day etc.

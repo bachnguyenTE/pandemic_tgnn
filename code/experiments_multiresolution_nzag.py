@@ -48,7 +48,7 @@ if __name__ == '__main__':
                         help='Initial learning rate.')
     parser.add_argument('--hidden', type=int, default=64,
                         help='Number of hidden units.')
-    parser.add_argument('--batch-size', type=int, default=32,
+    parser.add_argument('--batch-size', type=int, default=64,
                         help='Size of batch.')
     parser.add_argument('--dropout', type=float, default=0.5,
                         help='Dropout rate.')
@@ -200,7 +200,7 @@ if __name__ == '__main__':
                                 torch.save({
                                     'state_dict': model.state_dict(),
                                     'optimizer' : optimizer.state_dict(),
-                                }, 'model_best.pth.tar')
+                                }, 'model_best_{}__group{}_shift{}.pth.tar'.format(args.model, idx, shift))
 
                             scheduler.step(val_loss)
 
@@ -211,7 +211,7 @@ if __name__ == '__main__':
                     test_loss = AverageMeter()
 
                     #print("Loading checkpoint!")
-                    checkpoint = torch.load('model_best.pth.tar')
+                    checkpoint = torch.load('model_best_{}__group{}_shift{}.pth.tar'.format(args.model, idx, shift))
                     model.load_state_dict(checkpoint['state_dict'])
                     optimizer.load_state_dict(checkpoint['optimizer'])
                     model.eval()
