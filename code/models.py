@@ -11,7 +11,7 @@ from sklearn import preprocessing
 from sklearn.preprocessing import MinMaxScaler
 
 from prophet import Prophet
-from statsmodels.tsa.arima_model import ARIMA
+from statsmodels.tsa.arima.model import ARIMA
 
 from PyInstaller.utils.hooks import collect_submodules, collect_data_files
 
@@ -41,17 +41,17 @@ def arima(ahead,start_exp,n_samples,labels):
                 yhat = [0]*(ahead)
             else:
                 try:
-                    fit2 = ARIMA(ds.iloc[:,1].values, (2, 0, 2)).fit()
+                    fit2 = ARIMA(ds.iloc[:,1].values, order=(2, 0, 2)).fit()
                 except:
-                    fit2 = ARIMA(ds.iloc[:,1].values, (1, 0, 0)).fit()
+                    fit2 = ARIMA(ds.iloc[:,1].values, order=(1, 0, 0)).fit()
                 #yhat = abs(fit2.predict(start = test_sample , end = (test_sample+ahead-1) ))
-                yhat = abs(fit2.predict(start = test_sample , end = (test_sample+ahead-2) ))
+                yhat = abs(fit2.predict(start = test_sample , end = (test_sample+ahead-1) ))
             y_me = labels.iloc[j,test_sample:test_sample+ahead]
             e =  abs(yhat - y_me.values)
             err += e
             error += e
             y_pred.append(yhat)
-            y_true.append(y_me.value)
+            y_true.append(y_me.values)
 
         for idx in range(ahead):
             var[idx].append(err[idx])
@@ -85,7 +85,7 @@ def prophet(ahead, start_exp, n_samples, labels):
             err += e
             error += e
             y_pred.append(yhat)
-            y_true.append(y_me.value)
+            y_true.append(y_me.values)
         for idx in range(ahead):
             var[idx].append(err[idx])
             

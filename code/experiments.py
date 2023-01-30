@@ -75,7 +75,7 @@ if __name__ == '__main__':
     meta_labs, meta_graphs, meta_features, meta_y = read_meta_datasets(args.window)
     
     
-    for country in ["NZ"]:#,",
+    for country in ["NZ", "ES"]:#,",
         if(country=="IT"):
             idx = 0
 
@@ -105,7 +105,7 @@ if __name__ == '__main__':
             os.makedirs('../results')
 
         
-        for args.model in ["PROPHET", "ARIMA"]:#
+        for args.model in ["ARIMA", "PROPHET"]:#
             
             if(args.model=="PROPHET"):
 
