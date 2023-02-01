@@ -20,7 +20,7 @@ import pandas as pd
 
 from utils import generate_new_features, generate_new_batches, AverageMeter,generate_batches_lstm, read_meta_datasets
 from models import MPNN_LSTM, LSTM, MPNN, prophet, arima
-from sklearn.metrics import mean_absolute_error, mean_squared_error, explained_variance_score
+from sklearn.metrics import mean_absolute_error, mean_squared_error, explained_variance_score, r2_score
         
 
     
