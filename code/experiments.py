@@ -105,7 +105,7 @@ if __name__ == '__main__':
             os.makedirs('../results')
 
         
-        for args.model in ["ARIMA", "PROPHET"]:#
+        for args.model in ["MPNN_LSTM"]:#
             
             if(args.model=="PROPHET"):
 
@@ -135,6 +135,8 @@ if __name__ == '__main__':
             for shift in list(range(0,args.ahead)):
 
                 result = []
+                y_pred = np.empty((n_nodes, 0), dtype=int)
+                y_true = np.empty((n_nodes, 0), dtype=int)
                 exp = 0
 
                 for test_sample in range(args.start_exp,n_samples-shift):#
@@ -308,6 +310,8 @@ if __name__ == '__main__':
 
 	            # average error per region
                     error = np.sum(abs(o-l))/n_nodes
+                    y_pred = np.append(y_pred, o.reshape(-1,1), axis=1)
+                    y_true = np.append(y_true, l.reshape(-1,1), axis=1)
 			
                     # Print results
                     print("test error=", "{:.5f}".format(error))
@@ -315,8 +319,9 @@ if __name__ == '__main__':
 
 
                 print("{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(  np.sum(labels.iloc[:,args.start_exp:test_sample].mean(1))))
+                print("Aux metrics: {:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred)))
 
                 fw = open("../results/results_"+country+".csv","a")
-                fw.write(str(args.model)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
+                fw.write(str(args.model)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
                 #fw.write(hypers+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
                 fw.close()

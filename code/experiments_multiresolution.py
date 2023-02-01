@@ -20,6 +20,7 @@ import pandas as pd
 
 from utils import generate_new_features, generate_new_batches, AverageMeter,generate_batches_lstm, read_meta_datasets
 from models_multiresolution import MGNN, ATMGNN, TMGNN
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
         
 
     
@@ -104,11 +105,14 @@ if __name__ == '__main__':
             os.makedirs('../results')
 
         
-        for args.model in ["TMGNN"]:#
+        for args.model in ["ATMGNN"]:#
 			#---- predict days ahead , 0-> next day etc.
             for shift in list(range(0,args.ahead)):
 
                 result = []
+                y_pred = np.empty((n_nodes, 0), dtype=int)
+                y_true = np.empty((n_nodes, 0), dtype=int)
+                y_val = []
                 exp = 0
                 fw = open("../results/results_"+country+".csv","a")
 
@@ -240,15 +244,18 @@ if __name__ == '__main__':
 
 	            # average error per region
                     error = np.sum(abs(o-l))/n_nodes
+                    print("Shape of error: {}".format(o.shape))
 			
                     # Print results
                     print("test error=", "{:.5f}".format(error))
                     result.append(error)
-
+                    y_pred = np.append(y_pred, o.reshape(-1,1), axis=1)
+                    y_true = np.append(y_true, l.reshape(-1,1), axis=1)
 
                 print("{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(  np.sum(labels.iloc[:,args.start_exp:test_sample].mean(1))))
+                print("Aux metrics: {:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred)))
 
-                fw.write(str(args.model)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
+                fw.write(str(args.model)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
                 #fw.write(hypers+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
                 fw.close()
 
