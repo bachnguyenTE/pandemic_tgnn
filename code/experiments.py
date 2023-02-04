@@ -20,7 +20,7 @@ import pandas as pd
 
 from utils import generate_new_features, generate_new_batches, AverageMeter,generate_batches_lstm, read_meta_datasets
 from models import MPNN_LSTM, LSTM, MPNN, prophet, arima
-from sklearn.metrics import mean_absolute_error, mean_squared_error, explained_variance_score, r2_score
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
         
 
     
@@ -105,7 +105,7 @@ if __name__ == '__main__':
             os.makedirs('../results')
 
         
-        for args.model in ["MPNN_LSTM"]:#
+        for args.model in ["PROPHET", "ARIMA"]:#
             
             if(args.model=="PROPHET"):
 
@@ -114,7 +114,7 @@ if __name__ == '__main__':
                 for idx,e in enumerate(error):
                     fw = open("../results/results_"+country+"_baseline.csv","a")
                     #fw.write(args.model+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
-                    fw.write("PROPHET,"+str(idx)+",{:.5f}".format(e/(count*n_nodes))+",{:.5f}".format(np.std(var[idx]))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(explained_variance_score(y_true, y_pred))+"\n")
+                    fw.write("PROPHET,"+str(idx)+",{:.5f}".format(e/(count*n_nodes))+",{:.5f}".format(np.std(var[idx]))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
                     fw.close()
                 continue
 
@@ -127,7 +127,7 @@ if __name__ == '__main__':
                 for idx,e in enumerate(error):
                     fw = open("../results/results_"+country+"_baseline.csv","a")
                     #fw.write(args.model+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
-                    fw.write("ARIMA,"+str(idx)+",{:.5f}".format(e/(count*n_nodes))+",{:.5f}".format(np.std(var[idx]))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(explained_variance_score(y_true, y_pred))+"\n")
+                    fw.write("ARIMA,"+str(idx)+",{:.5f}".format(e/(count*n_nodes))+",{:.5f}".format(np.std(var[idx]))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
                     fw.close()
                 continue
 
@@ -155,6 +155,8 @@ if __name__ == '__main__':
                         avg = labels.iloc[:,:test_sample-1].mean(axis=1)
                         targets_lab = labels.iloc[:,test_sample+shift]
                         error = np.sum(abs(avg - targets_lab))/n_nodes
+                        y_pred = np.append(y_pred, avg.to_numpy().reshape(-1,1), axis=1)
+                        y_true = np.append(y_true, targets_lab.to_numpy().reshape(-1,1), axis=1)
                         print(error)
                         result.append(error)
                         continue        
@@ -167,6 +169,8 @@ if __name__ == '__main__':
                         error = np.sum(abs(win_lab - targets_lab))/n_nodes#/avg)
                         if(not np.isnan(error)):
                             result.append(error)
+                            y_pred = np.append(y_pred, win_lab.to_numpy().reshape(-1,1), axis=1)
+                            y_true = np.append(y_true, targets_lab.to_numpy().reshape(-1,1), axis=1)
                         else:
                             exp-=1
                         continue   
@@ -178,6 +182,8 @@ if __name__ == '__main__':
                         error = np.sum(abs(win_lab.mean(1) - targets_lab))/n_nodes
                         if(not np.isnan(error)):
                             result.append(error)
+                            y_pred = np.append(y_pred, win_lab.mean(1).to_numpy().reshape(-1,1), axis=1)
+                            y_true = np.append(y_true, targets_lab.to_numpy().reshape(-1,1), axis=1)
                         else:
                             exp-=1
                         continue   
