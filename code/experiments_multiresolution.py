@@ -63,7 +63,7 @@ if __name__ == '__main__':
                         help='How many epochs to wait before stopping.')
     parser.add_argument('--start-exp', type=int, default=15,
                         help='The first day to start the predictions.')
-    parser.add_argument('--ahead', type=int, default=14,
+    parser.add_argument('--ahead', type=int, default=30,
                         help='The number of days ahead of the train set the predictions should reach.')
     parser.add_argument('--sep', type=int, default=10,
                         help='Seperator for validation and train set.')
@@ -105,7 +105,7 @@ if __name__ == '__main__':
             os.makedirs('../results')
 
         
-        for args.model in ["TMGNN", "MGNN"]:#
+        for args.model in ["ATMGNN"]:#
 			#---- predict days ahead , 0-> next day etc.
             for shift in list(range(0,args.ahead)):
 
