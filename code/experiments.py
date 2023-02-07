@@ -40,6 +40,24 @@ def test(adj, features, y):
     return output, loss_test
 
 
+def output_val(gs_adj, features, y, model, checkpoint_name):
+    nfeat = features[0].shape[1]
+    n_nodes = gs_adj[0].shape[0]
+
+    adj_test, features_test, y_test = generate_new_batches(gs_adj, features, y, [8], args.graph_window, 21, args.batch_size,device,-1)
+    
+    checkpoint = torch.load(checkpoint_name)
+    model.load_state_dict(checkpoint['state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer'])
+    model.eval()
+    output, loss = test(adj_test[0], features_test[0], y_test[0])
+
+    o = output.cpu().detach().numpy()
+    l = y_test[0].cpu().numpy()
+    print(o)
+    print(l)
+
+    
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -147,8 +165,11 @@ if __name__ == '__main__':
                     idx_train = list(range(args.window-1, test_sample-args.sep))
                     
                     idx_val = list(range(test_sample-args.sep,test_sample,2)) 
+                    print('idx_val: {}'.format(idx_val))
                                      
                     idx_train = idx_train+list(range(test_sample-args.sep+1,test_sample,2))
+                    print('idx_train: {}'.format(idx_train))
+
 
                     #--------------------- Baselines
                     if(args.model=="AVG"):
@@ -322,6 +343,8 @@ if __name__ == '__main__':
                     # Print results
                     print("test error=", "{:.5f}".format(error))
                     result.append(error)
+
+                    output_val(gs_adj=meta_graphs[5], features=meta_features[5], y=meta_y[5], model=model, checkpoint_name='model_best_{}_shift{}.pth.tar'.format(args.model, shift))
 
 
                 print("{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(  np.sum(labels.iloc[:,args.start_exp:test_sample].mean(1))))
