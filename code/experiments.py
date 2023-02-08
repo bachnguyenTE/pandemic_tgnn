@@ -40,11 +40,8 @@ def test(adj, features, y):
     return output, loss_test
 
 
-def output_val(gs_adj, features, y, model, checkpoint_name):
-    nfeat = features[0].shape[1]
-    n_nodes = gs_adj[0].shape[0]
-
-    adj_test, features_test, y_test = generate_new_batches(gs_adj, features, y, [8], args.graph_window, 21, args.batch_size,device,-1)
+def output_val(gs_adj, features, y, model, checkpoint_name, shift):
+    adj_test, features_test, y_test = generate_new_batches(gs_adj, features, y, [8], args.graph_window, shift, args.batch_size,device,-1)
     
     checkpoint = torch.load(checkpoint_name)
     model.load_state_dict(checkpoint['state_dict'])
@@ -54,8 +51,8 @@ def output_val(gs_adj, features, y, model, checkpoint_name):
 
     o = output.cpu().detach().numpy()
     l = y_test[0].cpu().numpy()
-    print(o)
-    print(l)
+
+    return o, l
 
     
 
@@ -81,7 +78,7 @@ if __name__ == '__main__':
                         help='How many epochs to wait before stopping.')
     parser.add_argument('--start-exp', type=int, default=15,
                         help='The first day to start the predictions.')
-    parser.add_argument('--ahead', type=int, default=30,
+    parser.add_argument('--ahead', type=int, default=21,
                         help='The number of days ahead of the train set the predictions should reach.')
     parser.add_argument('--sep', type=int, default=10,
                         help='Seperator for validation and train set.')
@@ -149,6 +146,8 @@ if __name__ == '__main__':
                     fw.close()
                 continue
 
+            prediction_set = np.empty((args.ahead, n_nodes), np.float64)
+            truth_set = np.empty((args.ahead, n_nodes), np.float64)
 			#---- predict days ahead , 0-> next day etc.
             for shift in list(range(0,args.ahead)):
 
@@ -165,10 +164,10 @@ if __name__ == '__main__':
                     idx_train = list(range(args.window-1, test_sample-args.sep))
                     
                     idx_val = list(range(test_sample-args.sep,test_sample,2)) 
-                    print('idx_val: {}'.format(idx_val))
+                    # print('idx_val: {}'.format(idx_val))
                                      
                     idx_train = idx_train+list(range(test_sample-args.sep+1,test_sample,2))
-                    print('idx_train: {}'.format(idx_train))
+                    # print('idx_train: {}'.format(idx_train))
 
 
                     #--------------------- Baselines
@@ -344,8 +343,11 @@ if __name__ == '__main__':
                     print("test error=", "{:.5f}".format(error))
                     result.append(error)
 
-                    output_val(gs_adj=meta_graphs[5], features=meta_features[5], y=meta_y[5], model=model, checkpoint_name='model_best_{}_shift{}.pth.tar'.format(args.model, shift))
-
+                    prediction_set[shift], truth_set[shift] = output_val(gs_adj=meta_graphs[5], features=meta_features[5], y=meta_y[5], model=model, checkpoint_name='model_best_{}_shift{}.pth.tar'.format(args.model, shift), shift=shift)
+                    # print("Prediction set: {}".format(prediction_set))
+                    # print("Truth set: {}".format(truth_set))
+                    np.savetxt("predict_{}.csv".format(args.model), prediction_set, fmt="%.5f", delimiter=',')
+                    np.savetxt("truth_{}.csv".format(args.model), truth_set, fmt="%.5f", delimiter=',')
 
                 print("{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(  np.sum(labels.iloc[:,args.start_exp:test_sample].mean(1))))
                 print("Aux metrics: {:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred)))
