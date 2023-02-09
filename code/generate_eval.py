@@ -1,0 +1,150 @@
+import os
+import time
+import argparse
+import networkx as nx
+import numpy as np
+
+
+import torch
+import torch.nn.functional as F
+import torch.optim as optim
+
+from math import ceil
+
+import itertools
+import pandas as pd
+
+
+from utils import generate_new_features, generate_new_batches, AverageMeter,generate_batches_lstm, read_meta_datasets
+from models import MPNN_LSTM, LSTM, MPNN
+from models_multiresolution import MGNN, ATMGNN, TMGNN
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
+
+def test(adj, features, y):    
+    output = model(adj, features)
+    loss_test = F.mse_loss(output, y)
+    return output, loss_test
+
+
+def output_val(gs_adj, features, y, model, checkpoint_name, shift):
+    adj_test, features_test, y_test = generate_new_batches(gs_adj, features, y, [8], args.graph_window, shift, args.batch_size,device,-1)
+    
+    checkpoint = torch.load(checkpoint_name, map_location=torch.device('cpu'))
+    model.load_state_dict(checkpoint['state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer'])
+    model.eval()
+    output, loss = test(adj_test[0], features_test[0], y_test[0])
+
+    o = output.cpu().detach().numpy()
+    l = y_test[0].cpu().numpy()
+
+    return o, l
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--epochs', type=int, default=300,
+                        help='Number of epochs to train.')
+    parser.add_argument('--lr', type=float, default=0.001,
+                        help='Initial learning rate.')
+    parser.add_argument('--hidden', type=int, default=64,
+                        help='Number of hidden units.')
+    parser.add_argument('--batch-size', type=int, default=64,
+                        help='Size of batch.')
+    parser.add_argument('--dropout', type=float, default=0.5,
+                        help='Dropout rate.')
+    parser.add_argument('--window', type=int, default=7,
+                        help='Size of window for features.')
+    parser.add_argument('--graph-window', type=int, default=7,
+                        help='Size of window for graphs in MPNN LSTM.')
+    parser.add_argument('--recur',  default=False,
+                        help='True or False.')
+    parser.add_argument('--early-stop', type=int, default=100,
+                        help='How many epochs to wait before stopping.')
+    parser.add_argument('--start-exp', type=int, default=15,
+                        help='The first day to start the predictions.')
+    parser.add_argument('--ahead', type=int, default=21,
+                        help='The number of days ahead of the train set the predictions should reach.')
+    parser.add_argument('--sep', type=int, default=10,
+                        help='Seperator for validation and train set.')
+    
+    args = parser.parse_args()
+    device = torch.device("cuda" if torch.cuda.is_available() else torch.device("cpu"))
+    
+    
+    meta_labs, meta_graphs, meta_features, meta_y = read_meta_datasets(args.window)
+
+
+    for country in ["NZ"]:#,",
+        if(country=="IT"):
+            idx = 0
+
+        elif(country=="ES"):
+            idx = 1
+
+        elif(country=="EN"):
+            idx = 2
+
+        elif(country=="FR"):
+            idx = 3
+	
+        else:
+            idx = 4
+            
+            
+        labels = meta_labs[idx]
+        gs_adj = meta_graphs[idx]
+        features = meta_features[idx]
+        y = meta_y[idx]
+        n_samples= len(gs_adj)
+        nfeat = meta_features[0][0].shape[1]
+        
+        n_nodes = gs_adj[0].shape[0]
+        print(n_nodes)
+        if not os.path.exists('../results'):
+            os.makedirs('../results')
+
+
+        for args.model in ["MPNN_LSTM", "ATMGNN"]:
+            prediction_set = np.empty((args.ahead, n_nodes), np.float64)
+            truth_set = np.empty((args.ahead, n_nodes), np.float64)
+
+            for shift in list(range(0,args.ahead)):
+
+                result = []
+                y_pred = np.empty((n_nodes, 0), dtype=int)
+                y_true = np.empty((n_nodes, 0), dtype=int)
+
+                print("Evaluating {} at shift {}...".format(args.model, shift))
+
+                for test_sample in range(args.start_exp,n_samples-shift):
+                    
+                    #-------------------- Initializing
+                    # Model and optimizer
+                    if(args.model=="LSTM"):
+                        model = LSTM(nfeat=1*n_nodes, nhid=args.hidden, n_nodes=n_nodes, window=args.window, dropout=args.dropout,batch_size = args.batch_size, recur=args.recur).to(device)
+
+                    elif(args.model=="MPNN_LSTM"):
+                        model = MPNN_LSTM(nfeat=nfeat, nhid=args.hidden, nout=1, n_nodes=n_nodes, window=args.graph_window, dropout=args.dropout).to(device)
+
+                    elif(args.model=="MPNN"):
+                        model = MPNN(nfeat=nfeat, nhid=args.hidden, nout=1, dropout=args.dropout).to(device)
+
+                    elif(args.model=="ATMGNN"):
+                        model = ATMGNN(nfeat=nfeat, nhid=args.hidden, nout=1, n_nodes=n_nodes, window=args.graph_window, dropout=args.dropout, nhead=1).to(device)
+
+                    elif(args.model=="TMGNN"):
+                        model = TMGNN(nfeat=nfeat, nhid=args.hidden, nout=1, n_nodes=n_nodes, window=args.graph_window, dropout=args.dropout).to(device)
+
+                    elif(args.model=="MGNN"):
+                        model = MGNN(nfeat=nfeat, nhid=args.hidden, nout=1, dropout=args.dropout).to(device)
+
+                    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+
+                    #---------------- Testing
+                    prediction_set[shift], truth_set[shift] = output_val(gs_adj=meta_graphs[5], features=meta_features[5], y=meta_y[5], model=model, checkpoint_name='model_best_{}_shift{}.pth.tar'.format(args.model, shift), shift=shift)
+                    # print("Prediction set: {}".format(prediction_set))
+                    # print("Truth set: {}".format(truth_set))
+                    np.savetxt("predict_{}.csv".format(args.model), prediction_set, fmt="%.5f", delimiter=',')
+                    np.savetxt("truth_{}.csv".format(args.model), truth_set, fmt="%.5f", delimiter=',')

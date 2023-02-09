@@ -149,7 +149,7 @@ if __name__ == '__main__':
             prediction_set = np.empty((args.ahead, n_nodes), np.float64)
             truth_set = np.empty((args.ahead, n_nodes), np.float64)
 			#---- predict days ahead , 0-> next day etc.
-            for shift in list(range(args.ahead-1,args.ahead)):
+            for shift in list(range(0,args.ahead)):
 
                 result = []
                 y_pred = np.empty((n_nodes, 0), dtype=int)
