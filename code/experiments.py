@@ -90,7 +90,7 @@ if __name__ == '__main__':
     meta_labs, meta_graphs, meta_features, meta_y = read_meta_datasets(args.window)
     
     
-    for country in ["NZ"]:#,",
+    for country in ["IT", "NZ"]:#,",
         if(country=="IT"):
             idx = 0
 
@@ -120,7 +120,7 @@ if __name__ == '__main__':
             os.makedirs('../results')
 
         
-        for args.model in ["MPNN_LSTM"]:#
+        for args.model in ["MPNN_LSTM", "LSTM"]:#
             
             if(args.model=="PROPHET"):
 
@@ -307,7 +307,7 @@ if __name__ == '__main__':
                                 torch.save({
                                     'state_dict': model.state_dict(),
                                     'optimizer' : optimizer.state_dict(),
-                                }, 'model_best_{}_shift{}.pth.tar'.format(args.model, shift))
+                                }, 'model_best_{}_shift{}_{}.pth.tar'.format(args.model, shift, country))
 
                             scheduler.step(val_loss)
 
@@ -318,7 +318,7 @@ if __name__ == '__main__':
                     test_loss = AverageMeter()
 
                     #print("Loading checkpoint!")
-                    checkpoint = torch.load('model_best_{}_shift{}.pth.tar'.format(args.model, shift))
+                    checkpoint = torch.load('model_best_{}_shift{}_{}.pth.tar'.format(args.model, shift, country))
                     model.load_state_dict(checkpoint['state_dict'])
                     optimizer.load_state_dict(checkpoint['optimizer'])
                     model.eval()
@@ -343,11 +343,11 @@ if __name__ == '__main__':
                     print("test error=", "{:.5f}".format(error))
                     result.append(error)
 
-                    prediction_set[shift], truth_set[shift] = output_val(gs_adj=meta_graphs[5], features=meta_features[5], y=meta_y[5], model=model, checkpoint_name='model_best_{}_shift{}.pth.tar'.format(args.model, shift), shift=shift)
-                    # print("Prediction set: {}".format(prediction_set))
-                    # print("Truth set: {}".format(truth_set))
-                    np.savetxt("predict_{}.csv".format(args.model), prediction_set, fmt="%.5f", delimiter=',')
-                    np.savetxt("truth_{}.csv".format(args.model), truth_set, fmt="%.5f", delimiter=',')
+                    # prediction_set[shift], truth_set[shift] = output_val(gs_adj=meta_graphs[5], features=meta_features[5], y=meta_y[5], model=model, checkpoint_name='model_best_{}_shift{}.pth.tar'.format(args.model, shift), shift=shift)
+                    # # print("Prediction set: {}".format(prediction_set))
+                    # # print("Truth set: {}".format(truth_set))
+                    # np.savetxt("predict_{}.csv".format(args.model), prediction_set, fmt="%.5f", delimiter=',')
+                    # np.savetxt("truth_{}.csv".format(args.model), truth_set, fmt="%.5f", delimiter=',')
 
                 print("{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(  np.sum(labels.iloc[:,args.start_exp:test_sample].mean(1))))
                 print("Aux metrics: {:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred)))

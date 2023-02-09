@@ -28,7 +28,7 @@ def read_meta_datasets(window):
     labels = labels.set_index("name")
 
     sdate = date(2020, 2, 24)
-    edate = date(2020, 5, 12)
+    edate = date(2020, 4, 24)
     delta = edate - sdate
     dates = [sdate + timedelta(days=i) for i in range(delta.days+1)]
     dates = [str(date) for date in dates]
