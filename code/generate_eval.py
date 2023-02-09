@@ -28,8 +28,9 @@ def test(adj, features, y):
 
 
 def output_val(gs_adj, features, y, model, checkpoint_name, shift):
-    adj_test, features_test, y_test = generate_new_batches(gs_adj, features, y, [8], args.graph_window, shift, args.batch_size,device,-1)
-    
+    adj_test, features_test, y_test = generate_new_batches(gs_adj, features, y, [args.eval_start], args.graph_window, shift, args.batch_size,device,-1)
+    # print('Features: {}'.format(features_test[0].shape))
+
     checkpoint = torch.load(checkpoint_name, map_location=torch.device('cpu'))
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
@@ -68,7 +69,9 @@ if __name__ == '__main__':
                         help='The number of days ahead of the train set the predictions should reach.')
     parser.add_argument('--sep', type=int, default=10,
                         help='Seperator for validation and train set.')
-    
+    parser.add_argument('--eval-start', type=int, default=0,
+                        help='Start day offset for evaluation on new data.')
+
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else torch.device("cpu"))
     
@@ -146,5 +149,5 @@ if __name__ == '__main__':
                     prediction_set[shift], truth_set[shift] = output_val(gs_adj=meta_graphs[5], features=meta_features[5], y=meta_y[5], model=model, checkpoint_name='model_best_{}_shift{}.pth.tar'.format(args.model, shift), shift=shift)
                     # print("Prediction set: {}".format(prediction_set))
                     # print("Truth set: {}".format(truth_set))
-                    np.savetxt("predict_{}.csv".format(args.model), prediction_set, fmt="%.5f", delimiter=',')
-                    np.savetxt("truth_{}.csv".format(args.model), truth_set, fmt="%.5f", delimiter=',')
+                    np.savetxt("predict_{}_start{}.csv".format(args.model, args.eval_start), prediction_set, fmt="%.5f", delimiter=',')
+                    np.savetxt("truth_{}_start{}.csv".format(args.model, args.eval_start), truth_set, fmt="%.5f", delimiter=',')
