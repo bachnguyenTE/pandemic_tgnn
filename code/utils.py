@@ -250,6 +250,42 @@ def read_meta_datasets(window):
             y[i].append(labels.loc[node,dates[i]])
 
     meta_y.append(y)
+
+
+    #------------------ Italy
+    os.chdir("../Italy")
+    labels = pd.read_csv("italy_labels.csv")
+    del labels["id"]
+    labels = labels.set_index("name")
+
+    sdate = date(2020, 4, 24)
+    edate = date(2020, 5, 12)
+    delta = edate - sdate
+    dates = [sdate + timedelta(days=i) for i in range(delta.days+1)]
+    dates = [str(date) for date in dates]
+    
+    
+    Gs = generate_graphs_tmp(dates,"IT") 
+    #labels = labels[,:]
+    labels = labels.loc[list(Gs[0].nodes()),:]
+    labels = labels.loc[:,dates]    
+     
+    meta_labs.append(labels)
+    gs_adj = [nx.adjacency_matrix(kgs).toarray().T for kgs in Gs]
+
+    meta_graphs.append(gs_adj)
+
+    features = generate_new_features(Gs ,labels ,dates ,window )
+
+    meta_features.append(features)
+
+    y = list()
+    for i,G in enumerate(Gs):
+        y.append(list())
+        for node in G.nodes():
+            y[i].append(labels.loc[node,dates[i]])
+
+    meta_y.append(y)
     
     os.chdir("../../code")
 

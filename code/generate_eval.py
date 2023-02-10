@@ -21,24 +21,26 @@ from models_multiresolution import MGNN, ATMGNN, TMGNN
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 
-def test(adj, features, y):    
-    output = model(adj, features)
-    loss_test = F.mse_loss(output, y)
-    return output, loss_test
-
-
 def output_val(gs_adj, features, y, model, checkpoint_name, shift):
-    adj_test, features_test, y_test = generate_new_batches(gs_adj, features, y, [args.eval_start], args.graph_window, shift, args.batch_size,device,-1)
+
+    if (args.model=="LSTM"):
+        adj_test, features_test, y_test = generate_batches_lstm(n_nodes, y, [args.eval_start],  args.window, shift,  args.batch_size,device,-1)
+    else:
+        adj_test, features_test, y_test = generate_new_batches(gs_adj, features, y, [args.eval_start], args.graph_window, shift, args.batch_size,device,-1)
     # print('Features: {}'.format(features_test[0].shape))
 
     checkpoint = torch.load(checkpoint_name, map_location=torch.device('cpu'))
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
     model.eval()
-    output, loss = test(adj_test[0], features_test[0], y_test[0])
+    output = model(adj_test[0], features_test[0])
 
-    o = output.cpu().detach().numpy()
-    l = y_test[0].cpu().numpy()
+    if (args.model=="LSTM"):
+        o = output.view(-1).cpu().detach().numpy()
+        l = y_test[0].view(-1).cpu().numpy()
+    else:
+        o = output.cpu().detach().numpy()
+        l = y_test[0].cpu().numpy()
 
     return o, l
 
@@ -65,11 +67,11 @@ if __name__ == '__main__':
                         help='How many epochs to wait before stopping.')
     parser.add_argument('--start-exp', type=int, default=15,
                         help='The first day to start the predictions.')
-    parser.add_argument('--ahead', type=int, default=21,
+    parser.add_argument('--ahead', type=int, default=14,
                         help='The number of days ahead of the train set the predictions should reach.')
     parser.add_argument('--sep', type=int, default=10,
                         help='Seperator for validation and train set.')
-    parser.add_argument('--eval-start', type=int, default=0,
+    parser.add_argument('--eval-start', type=int, default=1,
                         help='Start day offset for evaluation on new data.')
 
     args = parser.parse_args()
@@ -79,7 +81,7 @@ if __name__ == '__main__':
     meta_labs, meta_graphs, meta_features, meta_y = read_meta_datasets(args.window)
 
 
-    for country in ["NZ"]:#,",
+    for country in ["IT"]:#,",
         if(country=="IT"):
             idx = 0
 
@@ -109,7 +111,7 @@ if __name__ == '__main__':
             os.makedirs('../results')
 
 
-        for args.model in ["MPNN_LSTM", "ATMGNN"]:
+        for args.model in ["MPNN_LSTM"]:
             prediction_set = np.empty((args.ahead, n_nodes), np.float64)
             truth_set = np.empty((args.ahead, n_nodes), np.float64)
 
@@ -146,8 +148,8 @@ if __name__ == '__main__':
                     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
                     #---------------- Testing
-                    prediction_set[shift], truth_set[shift] = output_val(gs_adj=meta_graphs[5], features=meta_features[5], y=meta_y[5], model=model, checkpoint_name='model_best_{}_shift{}.pth.tar'.format(args.model, shift), shift=shift)
+                    prediction_set[shift], truth_set[shift] = output_val(gs_adj=meta_graphs[0], features=meta_features[0], y=meta_y[0], model=model, checkpoint_name='model_best_{}_shift{}_{}.pth.tar'.format(args.model, shift, country), shift=shift)
                     # print("Prediction set: {}".format(prediction_set))
                     # print("Truth set: {}".format(truth_set))
-                    np.savetxt("predict_{}_start{}.csv".format(args.model, args.eval_start), prediction_set, fmt="%.5f", delimiter=',')
-                    np.savetxt("truth_{}_start{}.csv".format(args.model, args.eval_start), truth_set, fmt="%.5f", delimiter=',')
+                    np.savetxt("predict_{}_start{}_{}.csv".format(args.model, args.eval_start, country), prediction_set, fmt="%.5f", delimiter=',')
+                    np.savetxt("truth_{}_start{}_{}.csv".format(args.model, args.eval_start, country), truth_set, fmt="%.5f", delimiter=',')

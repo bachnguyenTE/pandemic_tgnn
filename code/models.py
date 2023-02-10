@@ -18,7 +18,7 @@ from PyInstaller.utils.hooks import collect_submodules, collect_data_files
 hiddenimports = collect_submodules('prophet')
 datas = collect_data_files('prophet')
 
-
+device = torch.device("cuda" if torch.cuda.is_available() else torch.device("cpu"))
 
             
 def arima(ahead,start_exp,n_samples,labels):
@@ -265,7 +265,7 @@ class LSTM(nn.Module):
         self.lstm = nn.LSTM(nfeat, self.nhid, num_layers=self.nb_layers)
     
         self.linear = nn.Linear(nhid, self.nout)
-        self.cell = ( nn.Parameter(nn.init.xavier_uniform(torch.Tensor(self.nb_layers, self.batch_size, self.nhid).type(torch.FloatTensor).cuda()),requires_grad=True))
+        self.cell = ( nn.Parameter(nn.init.xavier_uniform(torch.Tensor(self.nb_layers, self.batch_size, self.nhid).type(torch.FloatTensor).to(device)),requires_grad=True))
       
         #self.hidden_cell = (torch.zeros(2,self.batch_size,self.nhid).to(device),torch.zeros(2,self.batch_size,self.nhid).to(device))
         #nn.Parameter(nn.init.xavier_uniform(torch.Tensor(self.nb_layers, self.batch_size, self.nhid).type(torch.FloatTensor).cuda()),requires_grad=True))

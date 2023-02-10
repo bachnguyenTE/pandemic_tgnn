@@ -39,22 +39,7 @@ def test(adj, features, y):
     loss_test = F.mse_loss(output, y)
     return output, loss_test
 
-
-def output_val(gs_adj, features, y, model, checkpoint_name, shift):
-    adj_test, features_test, y_test = generate_new_batches(gs_adj, features, y, [8], args.graph_window, shift, args.batch_size,device,-1)
-    
-    checkpoint = torch.load(checkpoint_name)
-    model.load_state_dict(checkpoint['state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer'])
-    model.eval()
-    output, loss = test(adj_test[0], features_test[0], y_test[0])
-
-    o = output.cpu().detach().numpy()
-    l = y_test[0].cpu().numpy()
-
-    return o, l
-
-    
+  
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -90,7 +75,7 @@ if __name__ == '__main__':
     meta_labs, meta_graphs, meta_features, meta_y = read_meta_datasets(args.window)
     
     
-    for country in ["IT", "NZ"]:#,",
+    for country in ["NZ"]:#,",
         if(country=="IT"):
             idx = 0
 
@@ -120,7 +105,7 @@ if __name__ == '__main__':
             os.makedirs('../results')
 
         
-        for args.model in ["MPNN_LSTM", "LSTM"]:#
+        for args.model in ["MPNN_LSTM"]:#
             
             if(args.model=="PROPHET"):
 
