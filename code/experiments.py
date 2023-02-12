@@ -19,7 +19,7 @@ import pandas as pd
 
 
 from utils import generate_new_features, generate_new_batches, AverageMeter,generate_batches_lstm, read_meta_datasets
-from models import MPNN_LSTM, LSTM, MPNN, prophet, arima
+from models import MPNN_LSTM, BiLSTM, MPNN, prophet, arima
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
         
 
@@ -105,7 +105,7 @@ if __name__ == '__main__':
             os.makedirs('../results')
 
         
-        for args.model in ["LSTM"]:#
+        for args.model in ["BiLSTM"]:#
             
             if(args.model=="PROPHET"):
 
@@ -194,7 +194,7 @@ if __name__ == '__main__':
                         continue   
 
 
-                    if(args.model=="LSTM"):
+                    if(args.model=="BiLSTM"):
                         lstm_features = 1*n_nodes
                         adj_train, features_train, y_train = generate_batches_lstm(n_nodes, y, idx_train, args.window, shift,  args.batch_size,device,test_sample)
                         adj_val, features_val, y_val = generate_batches_lstm(n_nodes, y, idx_train, args.window, shift, args.batch_size,device,test_sample)
@@ -223,7 +223,7 @@ if __name__ == '__main__':
                     while(not stop):#
                         if(args.model=="LSTM"):
 
-                            model = LSTM(nfeat=lstm_features, nhid=args.hidden, n_nodes=n_nodes, window=args.window, dropout=args.dropout,batch_size = args.batch_size, recur=args.recur).to(device)
+                            model = BiLSTM(nfeat=lstm_features, nhid=args.hidden, n_nodes=n_nodes, window=args.window, dropout=args.dropout,batch_size = args.batch_size, recur=args.recur).to(device)
 
                         elif(args.model=="MPNN_LSTM"):
 

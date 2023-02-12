@@ -257,12 +257,12 @@ class LSTM(nn.Module):
         self.n_nodes = n_nodes
         self.nout = n_nodes
         self.window = window
-        self.nb_layers= 2
+        self.nb_layers= 1
         
         self.nfeat = nfeat 
         self.recur = recur
         self.batch_size = batch_size
-        self.lstm = nn.LSTM(nfeat, self.nhid, num_layers=self.nb_layers)
+        self.lstm = nn.LSTM(nfeat, self.nhid, num_layers=self.nb_layers, bidirectional=True)
     
         self.linear = nn.Linear(nhid, self.nout)
         self.cell = ( nn.Parameter(nn.init.xavier_uniform(torch.Tensor(self.nb_layers, self.batch_size, self.nhid).type(torch.FloatTensor).to(device)),requires_grad=True))
