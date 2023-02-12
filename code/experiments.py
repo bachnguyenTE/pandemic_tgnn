@@ -105,7 +105,7 @@ if __name__ == '__main__':
             os.makedirs('../results')
 
         
-        for args.model in ["MPNN_LSTM"]:#
+        for args.model in ["LSTM"]:#
             
             if(args.model=="PROPHET"):
 
