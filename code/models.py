@@ -250,7 +250,7 @@ class MPNN(nn.Module):
     
     
     
-class LSTM(nn.Module):
+class BiLSTM(nn.Module):
     def __init__(self, nfeat, nhid, n_nodes, window, dropout,batch_size, recur):
         super().__init__()
         self.nhid = nhid
@@ -262,9 +262,10 @@ class LSTM(nn.Module):
         self.nfeat = nfeat 
         self.recur = recur
         self.batch_size = batch_size
-        self.lstm = nn.LSTM(nfeat, self.nhid, num_layers=self.nb_layers, bidirectional=True)
+        self.lstm = nn.LSTM(nfeat, self.nhid, num_layers=self.nb_layers, bidirectional=True, dropout=0.2)
     
-        self.linear = nn.Linear(nhid, self.nout)
+        self.linear = nn.Linear(nhid*2, nhid)
+        self.linear2 = nn.Linear(nhid, self.nout)
         self.cell = ( nn.Parameter(nn.init.xavier_uniform(torch.Tensor(self.nb_layers, self.batch_size, self.nhid).type(torch.FloatTensor).to(device)),requires_grad=True))
       
         #self.hidden_cell = (torch.zeros(2,self.batch_size,self.nhid).to(device),torch.zeros(2,self.batch_size,self.nhid).to(device))
@@ -294,7 +295,8 @@ class LSTM(nn.Module):
         else:
         #------------------
             lstm_out, (hc,cn) = self.lstm(features)#, self.hidden_cell)#self.hidden_cell 
-            
-        predictions = self.linear(lstm_out)#.view(self.window,-1,self.n_nodes)#.view(self.batch_size,self.nhid))#)
+        
+        lstm_out = self.linear(lstm_out)
+        predictions = self.linear2(lstm_out)#.view(self.window,-1,self.n_nodes)#.view(self.batch_size,self.nhid))#)
         #print(predictions.shape)
         return predictions[-1].view(-1)

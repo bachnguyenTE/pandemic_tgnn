@@ -221,7 +221,7 @@ if __name__ == '__main__':
                     # Model and optimizer
                     stop = False#
                     while(not stop):#
-                        if(args.model=="LSTM"):
+                        if(args.model=="BiLSTM"):
 
                             model = BiLSTM(nfeat=lstm_features, nhid=args.hidden, n_nodes=n_nodes, window=args.window, dropout=args.dropout,batch_size = args.batch_size, recur=args.recur).to(device)
 
@@ -312,7 +312,7 @@ if __name__ == '__main__':
                     #for batch in range(n_test_batches):
                     output, loss = test(adj_test[0], features_test[0], y_test[0])
 
-                    if(args.model=="LSTM"):
+                    if(args.model=="BiLSTM"):
                         o = output.view(-1).cpu().detach().numpy()
                         l = y_test[0].view(-1).cpu().numpy()
                     else:
