@@ -257,7 +257,7 @@ class BiLSTM(nn.Module):
         self.n_nodes = n_nodes
         self.nout = n_nodes
         self.window = window
-        self.nb_layers= 3
+        self.nb_layers= 4
         
         self.nfeat = nfeat 
         self.recur = recur
