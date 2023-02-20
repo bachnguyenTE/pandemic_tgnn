@@ -13,20 +13,19 @@ from math import ceil
 
 import itertools
 import pandas as pd
+from datetime import date, timedelta
 
-
-from utils import generate_new_features, generate_new_batches, AverageMeter,generate_batches_lstm, read_meta_datasets
-from models import MPNN_LSTM, LSTM, MPNN
+from utils import generate_new_features, generate_new_batches, AverageMeter,generate_batches_lstm, read_meta_datasets, generate_graphs_tmp
+from models import MPNN_LSTM, BiLSTM, MPNN
 from models_multiresolution import MGNN, ATMGNN, TMGNN
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 def output_val(gs_adj, features, y, model, checkpoint_name, shift):
 
-    if (args.model=="LSTM"):
-        adj_test, features_test, y_test = generate_batches_lstm(n_nodes, y, [args.eval_start],  args.window, shift,  args.batch_size,device,-1)
-    else:
-        adj_test, features_test, y_test = generate_new_batches(gs_adj, features, y, [args.eval_start], args.graph_window, shift, args.batch_size,device,-1)
+    adj_test, features_test, y_test = generate_new_batches(gs_adj, features, y, [args.eval_start], args.graph_window, shift, args.batch_size,device,-1)
     # print('Features: {}'.format(features_test[0].shape))
 
     checkpoint = torch.load(checkpoint_name, map_location=torch.device('cpu'))
@@ -34,6 +33,16 @@ def output_val(gs_adj, features, y, model, checkpoint_name, shift):
     optimizer.load_state_dict(checkpoint['optimizer'])
     model.eval()
     output = model(adj_test[0], features_test[0])
+
+    print("gs_adj: {}".format(gs_adj))
+    print("features: {}".format(features))
+    print("y: {}".format(y))
+    print("output: {}".format(output))
+    print("Shape of elements in features: {}".format(features[0].shape))
+    print("features_test: {}".format(features_test))
+    print("features_test shape: {}".format(features_test[0].shape))
+    print("y_test: {}".format(y_test[0]))
+    exit(0)
 
     if (args.model=="LSTM"):
         o = output.view(-1).cpu().detach().numpy()
@@ -43,6 +52,76 @@ def output_val(gs_adj, features, y, model, checkpoint_name, shift):
         l = y_test[0].cpu().numpy()
 
     return o, l
+
+
+def output_val_autoreg(y_act, model, checkpoint_name, shift):
+
+    prediction_set_inner = np.empty((args.ahead, n_nodes), np.float64)
+    truth_set_inner = np.empty((args.ahead, n_nodes), np.float64)
+
+    checkpoint = torch.load(checkpoint_name, map_location=torch.device('cpu'))
+    model.load_state_dict(checkpoint['state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer'])
+    model.eval()
+
+    # Test set NZ, October data
+    # This initialization should be outside of the loop
+    os.chdir("../data/NewZealand")
+    labels = pd.read_csv("newzealand_labels.csv")
+    #del labels["id"]
+    labels = labels.set_index("name")
+    labels_copy = labels.copy()
+    os.chdir("../../code")
+
+    sdate = date(2022, 9, 4)
+    edate = date(2022, 10, 4)
+
+    #--- replacing the predicted day data with the predict vector
+
+    for n in range(0, args.ahead):
+        print("Evaluating shift {} at autoreg time {}...".format(shift, n))
+    #--- series of graphs and their respective dates
+        delta = edate - sdate
+        dates = [sdate + timedelta(days=i) for i in range(delta.days+1)]
+        dates = [str(date) for date in dates]
+        labels = labels_copy.loc[:,dates]    #labels.sum(1).values>10
+        
+        #--- generate graphs from data format
+        os.chdir("../data/NewZealand")
+        Gs = generate_graphs_tmp(dates,"NZ")
+        gs_adj = [nx.adjacency_matrix(kgs).toarray().T for kgs in Gs]
+
+        labels = labels.loc[list(Gs[0].nodes()),:]
+        features = generate_new_features(Gs, labels, dates, args.window, economic=False, econ_feat=21)
+        os.chdir("../../code")
+
+        y = list()
+        for i,G in enumerate(Gs):
+            y.append(list())
+            for node in G.nodes():
+                y[i].append(labels.loc[node,dates[i]])
+
+        adj_test, features_test, y_test = generate_new_batches(gs_adj, features, y_act, [args.eval_start+n], args.graph_window, shift, args.batch_size,device,-1)
+        output = model(adj_test[0], features_test[0])
+
+        if (args.model=="LSTM"):
+            o = output.view(-1).cpu().detach().numpy()
+            l = y_test[0].view(-1).cpu().numpy()
+        else:
+            o = output.cpu().detach().numpy()
+            l = y_test[0].cpu().numpy()
+
+        #--- replacing the predicted day data with the predict vector
+        to_be_replace_with = np.array(output.cpu().detach().numpy())
+        replacement_value = np.array(y_test[0].cpu().numpy())
+        for cur_date in labels_copy:
+            if (labels_copy[cur_date].to_numpy() == replacement_value).all():
+                labels_copy[cur_date] = to_be_replace_with
+
+        prediction_set_inner[n] = o
+        truth_set_inner[n] = l
+
+    return prediction_set_inner, truth_set_inner
 
 
 if __name__ == '__main__':
@@ -71,7 +150,7 @@ if __name__ == '__main__':
                         help='The number of days ahead of the train set the predictions should reach.')
     parser.add_argument('--sep', type=int, default=10,
                         help='Seperator for validation and train set.')
-    parser.add_argument('--eval-start', type=int, default=1,
+    parser.add_argument('--eval-start', type=int, default=7,
                         help='Start day offset for evaluation on new data.')
 
     args = parser.parse_args()
@@ -81,7 +160,7 @@ if __name__ == '__main__':
     meta_labs, meta_graphs, meta_features, meta_y = read_meta_datasets(args.window)
 
 
-    for country in ["IT"]:#,",
+    for country in ["NZ"]:#,",
         if(country=="IT"):
             idx = 0
 
@@ -111,11 +190,11 @@ if __name__ == '__main__':
             os.makedirs('../results')
 
 
-        for args.model in ["MPNN_LSTM"]:
+        for args.model in ["ATMGNN"]:
             prediction_set = np.empty((args.ahead, n_nodes), np.float64)
             truth_set = np.empty((args.ahead, n_nodes), np.float64)
 
-            for shift in list(range(0,args.ahead)):
+            for shift in list(range(0,1)):
 
                 result = []
                 y_pred = np.empty((n_nodes, 0), dtype=int)
@@ -123,33 +202,32 @@ if __name__ == '__main__':
 
                 print("Evaluating {} at shift {}...".format(args.model, shift))
 
-                for test_sample in range(args.start_exp,n_samples-shift):
-                    
-                    #-------------------- Initializing
-                    # Model and optimizer
-                    if(args.model=="LSTM"):
-                        model = LSTM(nfeat=1*n_nodes, nhid=args.hidden, n_nodes=n_nodes, window=args.window, dropout=args.dropout,batch_size = args.batch_size, recur=args.recur).to(device)
+                #-------------------- Initializing
+                # Model and optimizer
+                if(args.model=="LSTM"):
+                    model = BiLSTM(nfeat=1*n_nodes, nhid=args.hidden, n_nodes=n_nodes, window=args.window, dropout=args.dropout,batch_size = args.batch_size, recur=args.recur).to(device)
 
-                    elif(args.model=="MPNN_LSTM"):
-                        model = MPNN_LSTM(nfeat=nfeat, nhid=args.hidden, nout=1, n_nodes=n_nodes, window=args.graph_window, dropout=args.dropout).to(device)
+                elif(args.model=="MPNN_LSTM"):
+                    model = MPNN_LSTM(nfeat=nfeat, nhid=args.hidden, nout=1, n_nodes=n_nodes, window=args.graph_window, dropout=args.dropout).to(device)
 
-                    elif(args.model=="MPNN"):
-                        model = MPNN(nfeat=nfeat, nhid=args.hidden, nout=1, dropout=args.dropout).to(device)
+                elif(args.model=="MPNN"):
+                    model = MPNN(nfeat=nfeat, nhid=args.hidden, nout=1, dropout=args.dropout).to(device)
 
-                    elif(args.model=="ATMGNN"):
-                        model = ATMGNN(nfeat=nfeat, nhid=args.hidden, nout=1, n_nodes=n_nodes, window=args.graph_window, dropout=args.dropout, nhead=1).to(device)
+                elif(args.model=="ATMGNN"):
+                    model = ATMGNN(nfeat=nfeat, nhid=args.hidden, nout=1, n_nodes=n_nodes, window=args.graph_window, dropout=args.dropout, nhead=1).to(device)
 
-                    elif(args.model=="TMGNN"):
-                        model = TMGNN(nfeat=nfeat, nhid=args.hidden, nout=1, n_nodes=n_nodes, window=args.graph_window, dropout=args.dropout).to(device)
+                elif(args.model=="TMGNN"):
+                    model = TMGNN(nfeat=nfeat, nhid=args.hidden, nout=1, n_nodes=n_nodes, window=args.graph_window, dropout=args.dropout).to(device)
 
-                    elif(args.model=="MGNN"):
-                        model = MGNN(nfeat=nfeat, nhid=args.hidden, nout=1, dropout=args.dropout).to(device)
+                elif(args.model=="MGNN"):
+                    model = MGNN(nfeat=nfeat, nhid=args.hidden, nout=1, dropout=args.dropout).to(device)
 
-                    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+                optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
-                    #---------------- Testing
-                    prediction_set[shift], truth_set[shift] = output_val(gs_adj=meta_graphs[0], features=meta_features[0], y=meta_y[0], model=model, checkpoint_name='model_best_{}_shift{}_{}.pth.tar'.format(args.model, shift, country), shift=shift)
-                    # print("Prediction set: {}".format(prediction_set))
-                    # print("Truth set: {}".format(truth_set))
-                    np.savetxt("predict_{}_start{}_{}.csv".format(args.model, args.eval_start, country), prediction_set, fmt="%.5f", delimiter=',')
-                    np.savetxt("truth_{}_start{}_{}.csv".format(args.model, args.eval_start, country), truth_set, fmt="%.5f", delimiter=',')
+                #---------------- Testing
+                # prediction_set[shift], truth_set[shift] = output_val(gs_adj=meta_graphs[5], features=meta_features[5], y=meta_y[5], model=model, checkpoint_name='model_best_{}_shift{}_{}.pth.tar'.format(args.model, shift, country), shift=shift)
+                prediction_set, truth_set = output_val_autoreg(y_act=meta_y[5], model=model, checkpoint_name='model_best_{}_shift{}_{}.pth.tar'.format(args.model, shift, country), shift=shift)
+                # print("Prediction set: {}".format(prediction_set))
+                # print("Truth set: {}".format(truth_set))
+                np.savetxt("predict_{}_autoreg_shift{}.csv".format(args.model, shift), prediction_set, fmt="%.5f", delimiter=',')
+                np.savetxt("truth_{}_autoreg_shift{}.csv".format(args.model, shift), truth_set, fmt="%.5f", delimiter=',')
