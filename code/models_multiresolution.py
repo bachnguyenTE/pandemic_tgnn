@@ -14,7 +14,7 @@ from sklearn.preprocessing import MinMaxScaler
 # +------------------------------------------------+
 
 class TMGNN(nn.Module):
-    def __init__(self, nfeat, nhid, nout, n_nodes, window, dropout, num_clusters = [32, 16, 8], use_norm = False):
+    def __init__(self, nfeat, nhid, nout, n_nodes, window, dropout, num_clusters = [10, 5], use_norm = False):
         super(TMGNN, self).__init__()
         self.window = window
         self.n_nodes = n_nodes
@@ -150,7 +150,7 @@ class TMGNN(nn.Module):
 # +---------------------------------------+
 
 class MGNN(nn.Module):
-    def __init__(self, nfeat, nhid, nout, dropout, num_clusters = [32, 16, 8], use_norm = False):
+    def __init__(self, nfeat, nhid, nout, dropout, num_clusters = [10, 5], use_norm = False):
         super(MGNN, self).__init__()
        
         # Use normalization or not
@@ -275,7 +275,7 @@ class MPNN_Encoder(nn.Module):
 # +----------------------------------------------------------+
 
 class ATMGNN(nn.Module):
-    def __init__(self, nfeat, nhid, nout, n_nodes, window, dropout, nhead = 1, num_clusters = [32, 16, 8], use_norm = False):
+    def __init__(self, nfeat, nhid, nout, n_nodes, window, dropout, nhead = 1, num_clusters = [10, 5], use_norm = False):
         super(ATMGNN, self).__init__()
         
         self.window = window

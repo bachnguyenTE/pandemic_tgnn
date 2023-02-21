@@ -74,7 +74,7 @@ def output_val_autoreg(y_act, model, checkpoint_name, shift):
     os.chdir("../../code")
 
     sdate = date(2022, 9, 4)
-    edate = date(2022, 10, 4)
+    edate = date(2022, 11, 4)
 
     #--- replacing the predicted day data with the predict vector
 
@@ -190,11 +190,11 @@ if __name__ == '__main__':
             os.makedirs('../results')
 
 
-        for args.model in ["ATMGNN"]:
+        for args.model in ["MPNN_LSTM"]:
             prediction_set = np.empty((args.ahead, n_nodes), np.float64)
             truth_set = np.empty((args.ahead, n_nodes), np.float64)
 
-            for shift in list(range(0,1)):
+            for shift in list(range(0,args.ahead)):
 
                 result = []
                 y_pred = np.empty((n_nodes, 0), dtype=int)
