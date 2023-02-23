@@ -49,7 +49,7 @@ if __name__ == '__main__':
                         help='Initial learning rate.')
     parser.add_argument('--hidden', type=int, default=64,
                         help='Number of hidden units.')
-    parser.add_argument('--batch-size', type=int, default=64,
+    parser.add_argument('--batch-size', type=int, default=128,
                         help='Size of batch.')
     parser.add_argument('--dropout', type=float, default=0.5,
                         help='Dropout rate.')
@@ -105,7 +105,7 @@ if __name__ == '__main__':
             os.makedirs('../results')
 
         
-        for args.model in ["ATMGNN"]:#
+        for args.model in ["ATMGNN", "TMGNN"]:#
 			#---- predict days ahead , 0-> next day etc.
             for shift in list(range(0,args.ahead)):
 
