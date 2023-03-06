@@ -20,6 +20,7 @@ import pandas as pd
 
 from utils import generate_new_features, generate_new_batches, AverageMeter,generate_batches_lstm, read_meta_datasets
 from models_multiresolution import MGNN, ATMGNN, TMGNN
+from models import MPNN_LSTM
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
         
 
@@ -63,7 +64,7 @@ if __name__ == '__main__':
                         help='How many epochs to wait before stopping.')
     parser.add_argument('--start-exp', type=int, default=15,
                         help='The first day to start the predictions.')
-    parser.add_argument('--ahead', type=int, default=30,
+    parser.add_argument('--ahead', type=int, default=21,
                         help='The number of days ahead of the train set the predictions should reach.')
     parser.add_argument('--sep', type=int, default=10,
                         help='Seperator for validation and train set.')
@@ -105,7 +106,7 @@ if __name__ == '__main__':
             os.makedirs('../results')
 
         
-        for args.model in ["ATMGNN", "TMGNN"]:#
+        for args.model in ["MPNN_LSTM"]:#
 			#---- predict days ahead , 0-> next day etc.
             for shift in list(range(0,args.ahead)):
 
@@ -114,7 +115,7 @@ if __name__ == '__main__':
                 y_true = np.empty((n_nodes, 0), dtype=int)
                 y_val = []
                 exp = 0
-                fw = open("../results/results_"+country+".csv","a")
+                fw = open("../results/results_"+country+"_econ.csv","a")
 
                 for test_sample in range(args.start_exp,n_samples-shift):#
                     exp+=1
@@ -129,6 +130,11 @@ if __name__ == '__main__':
 
                     #--------------------- Baselines
                     if(args.model=="ATMGNN" or args.model=="TMGNN"):
+                        adj_train, features_train, y_train = generate_new_batches(gs_adj, features, y, idx_train, args.graph_window, shift, args.batch_size,device,test_sample)
+                        adj_val, features_val, y_val = generate_new_batches(gs_adj, features, y, idx_val, args.graph_window,  shift,args.batch_size, device,test_sample)
+                        adj_test, features_test, y_test = generate_new_batches(gs_adj, features, y,  [test_sample], args.graph_window,shift, args.batch_size, device,test_sample)
+
+                    elif(args.model=="MPNN_LSTM"):
                         adj_train, features_train, y_train = generate_new_batches(gs_adj, features, y, idx_train, args.graph_window, shift, args.batch_size,device,test_sample)
                         adj_val, features_val, y_val = generate_new_batches(gs_adj, features, y, idx_val, args.graph_window,  shift,args.batch_size, device,test_sample)
                         adj_test, features_test, y_test = generate_new_batches(gs_adj, features, y,  [test_sample], args.graph_window,shift, args.batch_size, device,test_sample)
@@ -152,6 +158,10 @@ if __name__ == '__main__':
 
                             model = ATMGNN(nfeat=nfeat, nhid=args.hidden, nout=1, n_nodes=n_nodes, window=args.graph_window, dropout=args.dropout, nhead=1).to(device)
 
+                        elif(args.model=="MPNN_LSTM"):
+
+                            model = MPNN_LSTM(nfeat=nfeat, nhid=args.hidden, nout=1, n_nodes=n_nodes, window=args.graph_window, dropout=args.dropout).to(device)
+                        
                         elif(args.model=="TMGNN"):
 
                             model = TMGNN(nfeat=nfeat, nhid=args.hidden, nout=1, n_nodes=n_nodes, window=args.graph_window, dropout=args.dropout).to(device)
@@ -198,11 +208,11 @@ if __name__ == '__main__':
 
                             #print(int(val_loss.detach().cpu().numpy()))
 
-                            if(epoch<30 and epoch>10):
-                                if(len(set([round(val_e) for val_e in val_among_epochs[-20:]])) == 1 ):
-                                    #stuck= True
-                                    stop = False
-                                    break
+                            # if(epoch<30 and epoch>10):
+                            #     if(len(set([round(val_e) for val_e in val_among_epochs[-20:]])) == 1 ):
+                            #         #stuck= True
+                            #         stop = False
+                            #         break
 
                             if( epoch>args.early_stop):
                                 if(len(set([round(val_e) for val_e in val_among_epochs[-50:]])) == 1):#
@@ -219,7 +229,7 @@ if __name__ == '__main__':
                                 torch.save({
                                     'state_dict': model.state_dict(),
                                     'optimizer' : optimizer.state_dict(),
-                                }, 'model_best_{}_shift{}_{}.pth.tar'.format(args.model, shift, country))
+                                }, 'model_best_{}_shift{}_{}_econ.pth.tar'.format(args.model, shift, country))
 
                             scheduler.step(val_loss)
 
@@ -230,7 +240,7 @@ if __name__ == '__main__':
                     test_loss = AverageMeter()
 
                     #print("Loading checkpoint!")
-                    checkpoint = torch.load('model_best_{}_shift{}_{}.pth.tar'.format(args.model, shift, country))
+                    checkpoint = torch.load('model_best_{}_shift{}_{}_econ.pth.tar'.format(args.model, shift, country))
                     model.load_state_dict(checkpoint['state_dict'])
                     optimizer.load_state_dict(checkpoint['optimizer'])
                     model.eval()
@@ -258,6 +268,4 @@ if __name__ == '__main__':
                 fw.write(str(args.model)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
                 #fw.write(hypers+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
                 fw.close()
-                np.savetxt("predict_{}_shift{}_{}.csv".format(args.model, shift, country), y_pred, fmt="%.5f", delimiter=',')
-                np.savetxt("truth_{}_shift{}_{}.csv".format(args.model, shift, country), y_true, fmt="%.5f", delimiter=',')
 
