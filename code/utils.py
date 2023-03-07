@@ -339,7 +339,7 @@ def generate_new_features(Gs, labels, dates, window=7, scaled=False, economic=Fa
         
         if economic: # adding additional elements equal length of economic features
             H = np.zeros([G.number_of_nodes(),window+econ_feat])
-            econ_data = pd.read_csv("gdp_2020_dhb_mmnorm.csv")
+            econ_data = pd.read_csv("gdp_2020_dhb_norm.csv")
             econ_data = econ_data.set_index("name")
             econ_data["ARR"] = econ_data["COMBINED"].apply(lambda x: np.fromstring(
                 x.replace('\n','')

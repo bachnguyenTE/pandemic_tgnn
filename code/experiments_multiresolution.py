@@ -106,7 +106,7 @@ if __name__ == '__main__':
             os.makedirs('../results')
 
         
-        for args.model in ["ATMGNN"]:#
+        for args.model in ["MPNN_LSTM"]:#
 			#---- predict days ahead , 0-> next day etc.
             for shift in list(range(0,args.ahead)):
 
