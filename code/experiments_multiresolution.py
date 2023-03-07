@@ -106,7 +106,7 @@ if __name__ == '__main__':
             os.makedirs('../results')
 
         
-        for args.model in ["MPNN_LSTM"]:#
+        for args.model in ["ATMGNN"]:#
 			#---- predict days ahead , 0-> next day etc.
             for shift in list(range(0,args.ahead)):
 
@@ -208,11 +208,11 @@ if __name__ == '__main__':
 
                             #print(int(val_loss.detach().cpu().numpy()))
 
-                            # if(epoch<30 and epoch>10):
-                            #     if(len(set([round(val_e) for val_e in val_among_epochs[-20:]])) == 1 ):
-                            #         #stuck= True
-                            #         stop = False
-                            #         break
+                            if(epoch<30 and epoch>10):
+                                if(len(set([round(val_e) for val_e in val_among_epochs[-20:]])) == 1 ):
+                                    #stuck= True
+                                    stop = False
+                                    break
 
                             if( epoch>args.early_stop):
                                 if(len(set([round(val_e) for val_e in val_among_epochs[-50:]])) == 1):#
