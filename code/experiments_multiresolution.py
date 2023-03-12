@@ -104,9 +104,13 @@ if __name__ == '__main__':
         print(n_nodes)
         if not os.path.exists('../results'):
             os.makedirs('../results')
+        if not os.path.exists('../Checkpoints'):
+            os.makedirs('../Checkpoints')
+        if not os.path.exists('../Predictions'):
+            os.makedirs('../Predictions')
 
         
-        for args.model in ["MPNN_LSTM"]:#
+        for args.model in ["ATMGNN"]:#
 			#---- predict days ahead , 0-> next day etc.
             for shift in list(range(0,args.ahead)):
 
@@ -115,7 +119,7 @@ if __name__ == '__main__':
                 y_true = np.empty((n_nodes, 0), dtype=int)
                 y_val = []
                 exp = 0
-                fw = open("../results/results_"+country+"_econ.csv","a")
+                fw = open("../results/results_"+country+"_temporal.csv","a")
 
                 for test_sample in range(args.start_exp,n_samples-shift):#
                     exp+=1
@@ -229,7 +233,7 @@ if __name__ == '__main__':
                                 torch.save({
                                     'state_dict': model.state_dict(),
                                     'optimizer' : optimizer.state_dict(),
-                                }, 'model_best_{}_shift{}_{}_econ.pth.tar'.format(args.model, shift, country))
+                                }, '../Checkpoints/model_best_{}_shift{}_{}_econ.pth.tar'.format(args.model, shift, country))
 
                             scheduler.step(val_loss)
 
@@ -240,7 +244,7 @@ if __name__ == '__main__':
                     test_loss = AverageMeter()
 
                     #print("Loading checkpoint!")
-                    checkpoint = torch.load('model_best_{}_shift{}_{}_econ.pth.tar'.format(args.model, shift, country))
+                    checkpoint = torch.load('../Checkpoints/model_best_{}_shift{}_{}_econ.pth.tar'.format(args.model, shift, country))
                     model.load_state_dict(checkpoint['state_dict'])
                     optimizer.load_state_dict(checkpoint['optimizer'])
                     model.eval()
@@ -268,4 +272,6 @@ if __name__ == '__main__':
                 fw.write(str(args.model)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
                 #fw.write(hypers+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
                 fw.close()
+                np.savetxt("../Predictions/predict_{}_shift{}_{}.csv".format(args.model, shift, country), y_pred, fmt="%.5f", delimiter=',')
+                np.savetxt("../Predictions/truth_{}_shift{}_{}.csv".format(args.model, shift, country), y_true, fmt="%.5f", delimiter=',')
 
