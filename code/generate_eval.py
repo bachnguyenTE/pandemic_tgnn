@@ -54,7 +54,7 @@ def output_val(gs_adj, features, y, model, checkpoint_name, shift):
     return o, l
 
 
-def output_val_autoreg(y_act, model, checkpoint_name, shift):
+def output_val_autoreg(y_act, model, checkpoint_name, shift, rand_weight=False):
 
     prediction_set_inner = np.empty((args.ahead, n_nodes), np.float64)
     truth_set_inner = np.empty((args.ahead, n_nodes), np.float64)
@@ -79,7 +79,7 @@ def output_val_autoreg(y_act, model, checkpoint_name, shift):
     #--- replacing the predicted day data with the predict vector
 
     for n in range(0, args.ahead):
-        print("Evaluating shift {} at autoreg time {}...".format(shift, n))
+        print("Evaluating shift {} at autoreg time {} with rand-weights {}...".format(shift, n, rand_weight))
     #--- series of graphs and their respective dates
         delta = edate - sdate
         dates = [sdate + timedelta(days=i) for i in range(delta.days+1)]
@@ -152,6 +152,8 @@ if __name__ == '__main__':
                         help='Seperator for validation and train set.')
     parser.add_argument('--eval-start', type=int, default=7,
                         help='Start day offset for evaluation on new data.')
+    parser.add_argument('--rand-weights', type=bool, default=False,
+                        help="True or False. Enable ablation where weights in the adjacency matrix are shuffled.")
 
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else torch.device("cpu"))
@@ -188,6 +190,8 @@ if __name__ == '__main__':
         print(n_nodes)
         if not os.path.exists('../results'):
             os.makedirs('../results')
+        if not os.path.exists('../eval'):
+            os.makedirs('../eval')
 
 
         for args.model in ["MPNN_LSTM"]:
@@ -226,8 +230,8 @@ if __name__ == '__main__':
 
                 #---------------- Testing
                 # prediction_set[shift], truth_set[shift] = output_val(gs_adj=meta_graphs[5], features=meta_features[5], y=meta_y[5], model=model, checkpoint_name='model_best_{}_shift{}_{}.pth.tar'.format(args.model, shift, country), shift=shift)
-                prediction_set, truth_set = output_val_autoreg(y_act=meta_y[5], model=model, checkpoint_name='model_best_{}_shift{}_{}.pth.tar'.format(args.model, shift, country), shift=shift)
+                prediction_set, truth_set = output_val_autoreg(y_act=meta_y[5], model=model, checkpoint_name='../Checkpoints/model_best_{}_shift{}_{}_econ.pth.tar'.format(args.model, shift, country), shift=shift, rand_weight=args.rand_weights)
                 # print("Prediction set: {}".format(prediction_set))
                 # print("Truth set: {}".format(truth_set))
-                np.savetxt("predict_{}_autoreg_shift{}.csv".format(args.model, shift), prediction_set, fmt="%.5f", delimiter=',')
-                np.savetxt("truth_{}_autoreg_shift{}.csv".format(args.model, shift), truth_set, fmt="%.5f", delimiter=',')
+                np.savetxt("../eval/predict_{}_autoreg_shift{}_randWeights{}.csv".format(args.model, shift, args.rand_weights), prediction_set, fmt="%.5f", delimiter=',')
+                np.savetxt("../eval/truth_{}_autoreg_shift{}_randWeights{}.csv".format(args.model, shift, args.rand_weights), truth_set, fmt="%.5f", delimiter=',')

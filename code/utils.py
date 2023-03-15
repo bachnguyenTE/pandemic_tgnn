@@ -14,7 +14,7 @@ import os
     
     
     
-def read_meta_datasets(window):
+def read_meta_datasets(window,rand_weight=False):
     os.chdir("../data")
     meta_labs = []
     meta_graphs = []
@@ -34,7 +34,7 @@ def read_meta_datasets(window):
     dates = [str(date) for date in dates]
     
     
-    Gs = generate_graphs_tmp(dates,"IT") 
+    Gs = generate_graphs_tmp(dates,"IT",rand_weight) 
     #labels = labels[,:]
     labels = labels.loc[list(Gs[0].nodes()),:]
     labels = labels.loc[:,dates]    
@@ -73,7 +73,7 @@ def read_meta_datasets(window):
     
     
     
-    Gs = generate_graphs_tmp(dates,"ES")# 
+    Gs = generate_graphs_tmp(dates,"ES",rand_weight)# 
     labels = labels.loc[list(Gs[0].nodes()),:]
     labels = labels.loc[:,dates]    #labels.sum(1).values>10
    
@@ -111,7 +111,7 @@ def read_meta_datasets(window):
     dates = [str(date) for date in dates]
 
     
-    Gs = generate_graphs_tmp(dates,"EN")
+    Gs = generate_graphs_tmp(dates,"EN",rand_weight)
     
     labels = labels.loc[list(Gs[0].nodes()),:]
     #print(labels.shape)
@@ -154,7 +154,7 @@ def read_meta_datasets(window):
 
     
     
-    Gs = generate_graphs_tmp(dates,"FR")
+    Gs = generate_graphs_tmp(dates,"FR",rand_weight)
     gs_adj = [nx.adjacency_matrix(kgs).toarray().T for kgs in Gs]
 
     labels = labels.loc[list(Gs[0].nodes()),:]
@@ -193,7 +193,7 @@ def read_meta_datasets(window):
 
     
     
-    Gs = generate_graphs_tmp(dates,"NZ")
+    Gs = generate_graphs_tmp(dates,"NZ",rand_weight)
     gs_adj = [nx.adjacency_matrix(kgs).toarray().T for kgs in Gs]
 
     labels = labels.loc[list(Gs[0].nodes()),:]
@@ -230,7 +230,7 @@ def read_meta_datasets(window):
 
     
     
-    Gs = generate_graphs_tmp(dates,"NZ")
+    Gs = generate_graphs_tmp(dates,"NZ",rand_weight)
     gs_adj = [nx.adjacency_matrix(kgs).toarray().T for kgs in Gs]
 
     labels = labels.loc[list(Gs[0].nodes()),:]
@@ -251,41 +251,6 @@ def read_meta_datasets(window):
 
     meta_y.append(y)
 
-
-    #------------------ Italy
-    os.chdir("../Italy")
-    labels = pd.read_csv("italy_labels.csv")
-    del labels["id"]
-    labels = labels.set_index("name")
-
-    sdate = date(2020, 4, 24)
-    edate = date(2020, 5, 12)
-    delta = edate - sdate
-    dates = [sdate + timedelta(days=i) for i in range(delta.days+1)]
-    dates = [str(date) for date in dates]
-    
-    
-    Gs = generate_graphs_tmp(dates,"IT") 
-    #labels = labels[,:]
-    labels = labels.loc[list(Gs[0].nodes()),:]
-    labels = labels.loc[:,dates]    
-     
-    meta_labs.append(labels)
-    gs_adj = [nx.adjacency_matrix(kgs).toarray().T for kgs in Gs]
-
-    meta_graphs.append(gs_adj)
-
-    features = generate_new_features(Gs ,labels ,dates ,window )
-
-    meta_features.append(features)
-
-    y = list()
-    for i,G in enumerate(Gs):
-        y.append(list())
-        for node in G.nodes():
-            y[i].append(labels.loc[node,dates[i]])
-
-    meta_y.append(y)
     
     os.chdir("../../code")
 
@@ -293,7 +258,7 @@ def read_meta_datasets(window):
     
     
 
-def generate_graphs_tmp(dates,country):
+def generate_graphs_tmp(dates,country,rand_weight=False):
     Gs = []
     for date in dates:
         d = pd.read_csv("graphs/"+country+"_"+date+".csv",header=None)
@@ -301,6 +266,9 @@ def generate_graphs_tmp(dates,country):
         nodes = set(d[0].unique()).union(set(d[1].unique()))
         nodes = sorted(nodes)
         G.add_nodes_from(nodes)
+
+        if rand_weight:
+            d.iloc[:,2] = np.random.permutation(d.iloc[:,2].values)
 
         for row in d.iterrows():
             G.add_edge(row[1][0], row[1][1], weight=row[1][2])
