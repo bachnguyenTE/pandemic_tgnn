@@ -68,12 +68,14 @@ if __name__ == '__main__':
                         help='The number of days ahead of the train set the predictions should reach.')
     parser.add_argument('--sep', type=int, default=10,
                         help='Seperator for validation and train set.')
+    parser.add_argument('--rand-weights', type=bool, default=False,
+                        help="True or False. Enable ablation where weights in the adjacency matrix are shuffled.")
     
     args = parser.parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else torch.device("cpu"))
     
     
-    meta_labs, meta_graphs, meta_features, meta_y = read_meta_datasets(args.window)
+    meta_labs, meta_graphs, meta_features, meta_y = read_meta_datasets(args.window, args.rand_weights)
     
     
     for country in ["NZ"]:#,",
@@ -110,7 +112,7 @@ if __name__ == '__main__':
             os.makedirs('../Predictions')
 
         
-        for args.model in ["ATMGNN"]:#
+        for args.model in ["MPNN_LSTM", "ATMGNN"]:#
 			#---- predict days ahead , 0-> next day etc.
             for shift in list(range(0,args.ahead)):
 
@@ -233,7 +235,7 @@ if __name__ == '__main__':
                                 torch.save({
                                     'state_dict': model.state_dict(),
                                     'optimizer' : optimizer.state_dict(),
-                                }, '../Checkpoints/model_best_{}_shift{}_{}_econ.pth.tar'.format(args.model, shift, country))
+                                }, '../Checkpoints/model_best_{}_shift{}_{}_RW_{}.pth.tar'.format(args.model, shift, country, args.rand_weights))
 
                             scheduler.step(val_loss)
 
@@ -244,7 +246,7 @@ if __name__ == '__main__':
                     test_loss = AverageMeter()
 
                     #print("Loading checkpoint!")
-                    checkpoint = torch.load('../Checkpoints/model_best_{}_shift{}_{}_econ.pth.tar'.format(args.model, shift, country))
+                    checkpoint = torch.load('../Checkpoints/model_best_{}_shift{}_{}_RW_{}.pth.tar'.format(args.model, shift, country, args.rand_weights))
                     model.load_state_dict(checkpoint['state_dict'])
                     optimizer.load_state_dict(checkpoint['optimizer'])
                     model.eval()
@@ -269,7 +271,7 @@ if __name__ == '__main__':
                 print("{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(  np.sum(labels.iloc[:,args.start_exp:test_sample].mean(1))))
                 print("Aux metrics: {:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred)))
 
-                fw.write(str(args.model)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
+                fw.write(str(args.model)+"_"+str(args.rand_weights)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
                 #fw.write(hypers+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
                 fw.close()
                 np.savetxt("../Predictions/predict_{}_shift{}_{}.csv".format(args.model, shift, country), y_pred, fmt="%.5f", delimiter=',')

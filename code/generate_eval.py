@@ -194,7 +194,7 @@ if __name__ == '__main__':
             os.makedirs('../eval')
 
 
-        for args.model in ["MPNN_LSTM"]:
+        for args.model in ["ATMGNN"]:
             prediction_set = np.empty((args.ahead, n_nodes), np.float64)
             truth_set = np.empty((args.ahead, n_nodes), np.float64)
 
