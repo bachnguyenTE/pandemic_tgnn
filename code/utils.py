@@ -268,7 +268,8 @@ def generate_graphs_tmp(dates,country,rand_weight=False):
         G.add_nodes_from(nodes)
 
         if rand_weight:
-            d.iloc[:,2] = np.random.permutation(d.iloc[:,2].values)
+            # d.iloc[:,2] = np.random.permutation(d.iloc[:,2].values)
+            d.iloc[:,2] = 1.0
 
         for row in d.iterrows():
             G.add_edge(row[1][0], row[1][1], weight=row[1][2])
