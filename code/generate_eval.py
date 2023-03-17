@@ -71,6 +71,7 @@ def output_val_autoreg(y_act, model, checkpoint_name, shift, rand_weight=False):
     #del labels["id"]
     labels = labels.set_index("name")
     labels_copy = labels.copy()
+    labels_truth = labels.copy()
     os.chdir("../../code")
 
     sdate = date(2022, 9, 4)
@@ -114,9 +115,13 @@ def output_val_autoreg(y_act, model, checkpoint_name, shift, rand_weight=False):
         #--- replacing the predicted day data with the predict vector
         to_be_replace_with = np.array(output.cpu().detach().numpy())
         replacement_value = np.array(y_test[0].cpu().numpy())
+        past_seven = []
         for cur_date in labels_copy:
+            past_seven.append(cur_date)
             if (labels_copy[cur_date].to_numpy() == replacement_value).all():
                 labels_copy[cur_date] = to_be_replace_with
+                if n > 4:
+                    labels_copy[past_seven[len(past_seven) - 5]] = labels_truth[past_seven[len(past_seven) - 5]]
 
         prediction_set_inner[n] = o
         truth_set_inner[n] = l
@@ -194,7 +199,7 @@ if __name__ == '__main__':
             os.makedirs('../eval')
 
 
-        for args.model in ["ATMGNN"]:
+        for args.model in ["MPNN_LSTM"]:
             prediction_set = np.empty((args.ahead, n_nodes), np.float64)
             truth_set = np.empty((args.ahead, n_nodes), np.float64)
 
@@ -230,8 +235,8 @@ if __name__ == '__main__':
 
                 #---------------- Testing
                 # prediction_set[shift], truth_set[shift] = output_val(gs_adj=meta_graphs[5], features=meta_features[5], y=meta_y[5], model=model, checkpoint_name='model_best_{}_shift{}_{}.pth.tar'.format(args.model, shift, country), shift=shift)
-                prediction_set, truth_set = output_val_autoreg(y_act=meta_y[5], model=model, checkpoint_name='../Checkpoints/model_best_{}_shift{}_{}_econ.pth.tar'.format(args.model, shift, country), shift=shift, rand_weight=args.rand_weights)
+                prediction_set, truth_set = output_val_autoreg(y_act=meta_y[5], model=model, checkpoint_name='../Checkpoints/model_best_{}_shift{}_{}_RW_True.pth.tar'.format(args.model, shift, country), shift=shift, rand_weight=args.rand_weights)
                 # print("Prediction set: {}".format(prediction_set))
                 # print("Truth set: {}".format(truth_set))
-                np.savetxt("../eval/predict_{}_autoreg_shift{}_randWeights{}.csv".format(args.model, shift, args.rand_weights), prediction_set, fmt="%.5f", delimiter=',')
-                np.savetxt("../eval/truth_{}_autoreg_shift{}_randWeights{}.csv".format(args.model, shift, args.rand_weights), truth_set, fmt="%.5f", delimiter=',')
+                np.savetxt("../eval/predict_{}_autoreg_shift{}_randWeights{}_disconnected_p7.csv".format(args.model, shift, args.rand_weights), prediction_set, fmt="%.5f", delimiter=',')
+                np.savetxt("../eval/truth_{}_autoreg_shift{}_randWeights{}_disconnected_p7.csv".format(args.model, shift, args.rand_weights), truth_set, fmt="%.5f", delimiter=',')
