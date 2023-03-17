@@ -272,7 +272,8 @@ def generate_graphs_tmp(dates,country,rand_weight=False):
             d.iloc[:,2] = 1.0
 
         for row in d.iterrows():
-            G.add_edge(row[1][0], row[1][1], weight=row[1][2])
+            if not rand_weight:
+                G.add_edge(row[1][0], row[1][1], weight=row[1][2])
         Gs.append(G)
         
     return Gs
