@@ -6,7 +6,7 @@ import time
 import argparse
 import networkx as nx
 import numpy as np
-
+import random
 
 import torch
 import torch.nn.functional as F
@@ -70,8 +70,13 @@ if __name__ == '__main__':
                         help='Seperator for validation and train set.')
     parser.add_argument('--rand-weights', type=bool, default=False,
                         help="True or False. Enable ablation where weights in the adjacency matrix are shuffled.")
+    parser.add_argument('--rand-seed', type=int, default=0,
+                        help="Specify the random seeds for reproducibility.")
     
     args = parser.parse_args()
+    torch.manual_seed(args.rand_seed)
+    random.seed(args.rand_seed)
+    np.random.seed(args.rand_seed)
     device = torch.device("cuda" if torch.cuda.is_available() else torch.device("cpu"))
     
     
@@ -235,7 +240,7 @@ if __name__ == '__main__':
                                 torch.save({
                                     'state_dict': model.state_dict(),
                                     'optimizer' : optimizer.state_dict(),
-                                }, '../Checkpoints/model_best_{}_shift{}_{}_RW_{}.pth.tar'.format(args.model, shift, country, args.rand_weights))
+                                }, '../Checkpoints/model_best_{}_shift{}_{}_RW_{}_seed{}.pth.tar'.format(args.model, shift, country, args.rand_weights, args.rand_seed))
 
                             scheduler.step(val_loss)
 
@@ -246,7 +251,7 @@ if __name__ == '__main__':
                     test_loss = AverageMeter()
 
                     #print("Loading checkpoint!")
-                    checkpoint = torch.load('../Checkpoints/model_best_{}_shift{}_{}_RW_{}.pth.tar'.format(args.model, shift, country, args.rand_weights))
+                    checkpoint = torch.load('../Checkpoints/model_best_{}_shift{}_{}_RW_{}_seed{}.pth.tar'.format(args.model, shift, country, args.rand_weights, args.rand_seed))
                     model.load_state_dict(checkpoint['state_dict'])
                     optimizer.load_state_dict(checkpoint['optimizer'])
                     model.eval()
