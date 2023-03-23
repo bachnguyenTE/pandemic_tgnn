@@ -18,7 +18,7 @@ import itertools
 import pandas as pd
 
 
-from utils import generate_new_features, generate_new_batches, AverageMeter,generate_batches_lstm, read_meta_datasets
+from utils import generate_new_features, generate_new_batches, AverageMeter, generate_batches_lstm, read_meta_datasets
 from models_multiresolution import MGNN, ATMGNN, TMGNN
 from models import MPNN_LSTM, MPNN
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
@@ -50,7 +50,7 @@ if __name__ == '__main__':
                         help='Initial learning rate.')
     parser.add_argument('--hidden', type=int, default=32,
                         help='Number of hidden units.')
-    parser.add_argument('--batch-size', type=int, default=64,
+    parser.add_argument('--batch-size', type=int, default=4,
                         help='Size of batch.')
     parser.add_argument('--dropout', type=float, default=0.5,
                         help='Dropout rate.')
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     meta_labs, meta_graphs, meta_features, meta_y = read_meta_datasets(args.window, args.rand_weights)
     
     
-    for country in ["IT","ES","EN","FR","NZ"]:#,",
+    for country in ["IT","ES","EN","FR"]:#,",
         if(country=="IT"):
             idx = 0
 
@@ -117,7 +117,7 @@ if __name__ == '__main__':
             os.makedirs('../Predictions')
 
         
-        for args.model in ["MGNN"]:#
+        for args.model in ["ATMGNN"]:#
 			#---- predict days ahead , 0-> next day etc.
             for shift in list(range(0,args.ahead)):
 
