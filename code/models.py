@@ -12,6 +12,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 from prophet import Prophet
 from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 from PyInstaller.utils.hooks import collect_submodules, collect_data_files
 
@@ -56,6 +57,48 @@ def arima(ahead,start_exp,n_samples,labels):
         for idx in range(ahead):
             var[idx].append(err[idx])
     return error, var, y_pred, y_true
+
+
+
+def sarimax(ahead,start_exp,n_samples,labels):
+    var = []
+    y_pred_list = []
+    y_true_list = []
+    for idx in range(ahead):
+        var.append([])
+
+    error= np.zeros(ahead)
+    count = 0
+    for test_sample in range(start_exp,n_samples-ahead):#
+        print(test_sample)
+        count+=1
+        err = 0
+        y_pred_mat = np.zeros((0))
+        y_true_mat = np.zeros((0))
+        for j in range(labels.shape[0]):
+            ds = labels.iloc[j,:test_sample-1].reset_index()
+
+            if(sum(ds.iloc[:,1])==0):
+                yhat = [0]*(ahead)
+            else:
+                try:
+                    fit2 = SARIMAX(ds.iloc[:,1].values, order=(1, 1, 0), seasonal_order=(1, 0, 1, 7), enforce_stationarity=False, enforce_invertibility=False).fit()
+                except:
+                    fit2 = SARIMAX(ds.iloc[:,1].values, order=(1, 0, 0), enforce_stationarity=False, enforce_invertibility=False).fit()
+                #yhat = abs(fit2.predict(start = test_sample , end = (test_sample+ahead-1) ))
+                yhat = abs(fit2.predict(start = test_sample , end = (test_sample+ahead-1) ))
+            y_me = labels.iloc[j,test_sample:test_sample+ahead]
+            e =  abs(yhat - y_me.values)
+            err += e
+            error += e
+            y_pred_mat = np.append(y_pred_mat, yhat, axis=0)
+            y_true_mat = np.append(y_true_mat, y_me.values, axis=0)
+        y_pred_list.append(y_pred_mat)
+        y_true_list.append(y_true_mat)
+
+        for idx in range(ahead):
+            var[idx].append(err[idx])
+    return error, var, y_pred_list, y_true_list
 
 
 
