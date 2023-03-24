@@ -19,7 +19,7 @@ import pandas as pd
 
 
 from utils import generate_new_features, generate_new_batches, AverageMeter,generate_batches_lstm, read_meta_datasets
-from models import MPNN_LSTM, BiLSTM, MPNN, prophet, arima, sarimax
+from models import MPNN_LSTM, BiLSTM, MPNN, prophet, arima, sarimax, lin_reg
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
         
 
@@ -61,7 +61,7 @@ if __name__ == '__main__':
                         help='True or False.')
     parser.add_argument('--early-stop', type=int, default=100,
                         help='How many epochs to wait before stopping.')
-    parser.add_argument('--start-exp', type=int, default=15,
+    parser.add_argument('--start-exp', type=int, default=28,
                         help='The first day to start the predictions.')
     parser.add_argument('--ahead', type=int, default=21,
                         help='The number of days ahead of the train set the predictions should reach.')
@@ -109,7 +109,7 @@ if __name__ == '__main__':
             os.makedirs('../Predictions')
 
         
-        for args.model in ["MPNN"]:#
+        for args.model in ["LIN_REG"]:#
             
             if(args.model=="PROPHET"):
 
@@ -132,6 +132,19 @@ if __name__ == '__main__':
                     fw = open("../results/results_"+country+"_baseline.csv","a")
                     #fw.write(args.model+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
                     fw.write("ARIMA,"+str(idx)+",{:.5f}".format(e/(count*n_nodes))+",{:.5f}".format(np.std(var[idx]))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
+                    fw.close()
+                continue
+
+            
+            if(args.model=="LIN_REG"):
+
+                y_pred, y_true = lin_reg(args.ahead,args.start_exp,n_samples,labels,args.window)
+                count = len(range(args.start_exp,n_samples-args.ahead))
+
+                for idx,e in enumerate(y_pred):
+                    fw = open("../results/results_"+country+"_baseline.csv","a")
+                    #fw.write(args.model+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
+                    fw.write("LIN_REG,"+str(idx)+",{:.5f}".format(mean_absolute_error(y_true[idx], y_pred[idx]))+",{:.5f}".format(mean_squared_error(y_true[idx], y_pred[idx]))+",{:.5f}".format(mean_squared_error(y_true[idx], y_pred[idx], squared=False))+",{:.5f}".format(r2_score(y_true[idx], y_pred[idx]))+"\n")
                     fw.close()
                 continue
 
