@@ -138,14 +138,13 @@ if __name__ == '__main__':
             
             if(args.model=="LIN_REG"):
 
-                y_pred, y_true = lin_reg(args.ahead,args.start_exp,n_samples,labels,args.window)
-                count = len(range(args.start_exp,n_samples-args.ahead))
-
-                for idx,e in enumerate(y_pred):
+                for shift_time in range(args.ahead):
+                    y_pred, y_true = lin_reg(args.start_exp,n_samples,labels,args.window,shift_time)
                     fw = open("../results/results_"+country+"_baseline.csv","a")
                     #fw.write(args.model+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
-                    fw.write("LIN_REG,"+str(idx)+",{:.5f}".format(mean_absolute_error(y_true[idx], y_pred[idx]))+",{:.5f}".format(mean_squared_error(y_true[idx], y_pred[idx]))+",{:.5f}".format(mean_squared_error(y_true[idx], y_pred[idx], squared=False))+",{:.5f}".format(r2_score(y_true[idx], y_pred[idx]))+"\n")
+                    fw.write("LIN_REG,"+str(shift_time)+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
                     fw.close()
+
                 continue
 
 
