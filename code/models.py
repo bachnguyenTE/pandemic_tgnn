@@ -10,6 +10,9 @@ import scipy.sparse as sp
 from sklearn import preprocessing
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import RBF
 
 from prophet import Prophet
 from statsmodels.tsa.arima.model import ARIMA
@@ -85,6 +88,43 @@ def lin_reg(start_exp,n_samples,labels,window,i_ahead):
                 continue
             else:
                 reg = LinearRegression().fit(X_train, y_train)
+                p_ds = labels.iloc[j,test_sample-window-i_ahead+1:test_sample-i_ahead+1].reset_index()
+                p_input = np.array(p_ds.iloc[:,1])
+                yhat = reg.predict([p_input])
+            y_me = labels.iloc[j,test_sample]
+            y_pred_arr = np.append(y_pred_arr, yhat)
+            y_true_arr = np.append(y_true_arr, y_me)
+        y_pred_mat = np.append(y_pred_mat, y_pred_arr)
+        y_true_mat = np.append(y_true_mat, y_true_arr)
+
+    return y_pred_mat, y_true_mat
+
+
+
+def rand_forest(start_exp,n_samples,labels,window,i_ahead):
+    y_pred_mat = np.zeros((0))
+    y_true_mat = np.zeros((0))
+
+    for test_sample in range(start_exp,n_samples-i_ahead):#
+        print(test_sample)
+        y_pred_arr = np.zeros((0))
+        y_true_arr = np.zeros((0))
+        for j in range(labels.shape[0]):
+            ds = labels.iloc[j,:test_sample-1].reset_index()
+
+            X_train = np.empty((0,window))
+            y_train = np.empty((0))
+            for k in range(window, len(ds)):
+                for n in range(k+i_ahead, len(ds)):
+                    X_train = np.append(X_train, [np.array(ds.iloc[n-window-i_ahead+1:n-i_ahead+1,1])], axis=0)
+                    y_train = np.append(y_train, ds.iloc[n,1])
+
+            if(sum(ds.iloc[:,1])==0):
+                yhat = np.array([0])
+            elif(X_train.shape[0]==0):
+                continue
+            else:
+                reg = RandomForestRegressor().fit(X_train, y_train)
                 p_ds = labels.iloc[j,test_sample-window-i_ahead+1:test_sample-i_ahead+1].reset_index()
                 p_input = np.array(p_ds.iloc[:,1])
                 yhat = reg.predict([p_input])
