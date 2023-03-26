@@ -19,7 +19,7 @@ import pandas as pd
 
 
 from utils import generate_new_features, generate_new_batches, AverageMeter,generate_batches_lstm, read_meta_datasets
-from models import MPNN_LSTM, BiLSTM, MPNN, prophet, arima, sarimax, lin_reg_time, rand_forest
+from models import MPNN_LSTM, BiLSTM, MPNN, prophet, arima, sarimax, lin_reg_time, rand_forest_time, gaussian_reg_time
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
         
 
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     meta_labs, meta_graphs, meta_features, meta_y = read_meta_datasets(args.window)
     
     
-    for country in ["IT","ES","EN","FR"]:#,",
+    for country in ["NZ","IT","ES","EN","FR"]:#,",
         if(country=="IT"):
             idx = 0
 
@@ -109,7 +109,7 @@ if __name__ == '__main__':
             os.makedirs('../Predictions')
 
         
-        for args.model in ["BiLSTM"]:#
+        for args.model in ["RAND_FOREST"]:#
             
             if(args.model=="PROPHET"):
 
@@ -151,10 +151,22 @@ if __name__ == '__main__':
             if(args.model=="RAND_FOREST"):
 
                 for shift_time in range(args.ahead):
-                    y_pred, y_true = rand_forest(args.start_exp,n_samples,labels,args.window,shift_time)
+                    y_pred, y_true = rand_forest_time(args.start_exp,n_samples,labels,shift_time)
                     fw = open("../results/results_"+country+"_baseline.csv","a")
                     #fw.write(args.model+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
                     fw.write("RAND_FOREST,"+str(shift_time)+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
+                    fw.close()
+
+                continue
+
+
+            if(args.model=="GAUSSIAN_REG"):
+
+                for shift_time in range(args.ahead):
+                    y_pred, y_true = gaussian_reg_time(args.start_exp,n_samples,labels,shift_time)
+                    fw = open("../results/results_"+country+"_baseline.csv","a")
+                    #fw.write(args.model+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
+                    fw.write("GAUSSIAN_REG,"+str(shift_time)+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
                     fw.close()
 
                 continue

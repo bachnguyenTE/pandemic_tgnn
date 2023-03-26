@@ -138,6 +138,40 @@ def rand_forest(start_exp,n_samples,labels,window,i_ahead):
 
 
 
+def gaussian_reg_time(start_exp,n_samples,labels,i_ahead):
+    y_pred_mat = np.zeros((0))
+    y_true_mat = np.zeros((0))
+
+    for test_sample in range(start_exp,n_samples-i_ahead):#
+        print(test_sample)
+        y_pred_arr = np.zeros((0))
+        y_true_arr = np.zeros((0))
+        for j in range(labels.shape[0]):
+            ds = labels.iloc[j,:test_sample-1].reset_index()
+
+            X_train = np.empty((0, 1))
+            y_train = np.empty((0))
+            for k in range(ds.shape[0]):
+                X_train = np.append(X_train, [[k]], axis=0)
+                y_train = np.append(y_train, ds.iloc[k, 1])
+
+            if(sum(ds.iloc[:,1])==0):
+                yhat = np.array([0])
+            elif(X_train.shape[0]==0):
+                continue
+            else:
+                reg = GaussianProcessRegressor(kernel=RBF(),random_state=0).fit(X_train, y_train)
+                yhat = reg.predict([[test_sample+i_ahead-1]])
+            y_me = labels.iloc[j,test_sample+i_ahead-1]
+            y_pred_arr = np.append(y_pred_arr, yhat)
+            y_true_arr = np.append(y_true_arr, y_me)
+        y_pred_mat = np.append(y_pred_mat, y_pred_arr)
+        y_true_mat = np.append(y_true_mat, y_true_arr)
+
+    return y_pred_mat, y_true_mat
+
+
+
 def lin_reg_time(start_exp,n_samples,labels,i_ahead):
     y_pred_mat = np.zeros((0))
     y_true_mat = np.zeros((0))
@@ -170,6 +204,39 @@ def lin_reg_time(start_exp,n_samples,labels,i_ahead):
 
     return y_pred_mat, y_true_mat
 
+
+
+def rand_forest_time(start_exp,n_samples,labels,i_ahead):
+    y_pred_mat = np.zeros((0))
+    y_true_mat = np.zeros((0))
+
+    for test_sample in range(start_exp,n_samples-i_ahead):#
+        print(test_sample)
+        y_pred_arr = np.zeros((0))
+        y_true_arr = np.zeros((0))
+        for j in range(labels.shape[0]):
+            ds = labels.iloc[j,:test_sample-1].reset_index()
+
+            X_train = np.empty((0, 1))
+            y_train = np.empty((0))
+            for k in range(ds.shape[0]):
+                X_train = np.append(X_train, [[k]], axis=0)
+                y_train = np.append(y_train, ds.iloc[k, 1])
+
+            if(sum(ds.iloc[:,1])==0):
+                yhat = np.array([0])
+            elif(X_train.shape[0]==0):
+                continue
+            else:
+                reg = RandomForestRegressor().fit(X_train, y_train)
+                yhat = reg.predict([[test_sample+i_ahead-1]])
+            y_me = labels.iloc[j,test_sample+i_ahead-1]
+            y_pred_arr = np.append(y_pred_arr, yhat)
+            y_true_arr = np.append(y_true_arr, y_me)
+        y_pred_mat = np.append(y_pred_mat, y_pred_arr)
+        y_true_mat = np.append(y_true_mat, y_true_arr)
+
+    return y_pred_mat, y_true_mat
 
 
 
