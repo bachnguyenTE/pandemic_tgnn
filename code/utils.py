@@ -202,7 +202,7 @@ def read_meta_datasets(window,rand_weight=False):
 
     meta_graphs.append(gs_adj)
 
-    features = generate_new_features(Gs ,labels ,dates ,window, economic=False, econ_feat=21)
+    features = generate_new_features(Gs ,labels ,dates ,window, economic=True, econ_feat=21)
 
     meta_features.append(features)
 
@@ -239,7 +239,7 @@ def read_meta_datasets(window,rand_weight=False):
 
     meta_graphs.append(gs_adj)
 
-    features = generate_new_features(Gs ,labels ,dates ,window, economic=False, econ_feat=21)
+    features = generate_new_features(Gs ,labels ,dates ,window, economic=True, econ_feat=21)
 
     meta_features.append(features)
 

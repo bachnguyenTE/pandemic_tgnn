@@ -50,7 +50,7 @@ if __name__ == '__main__':
                         help='Initial learning rate.')
     parser.add_argument('--hidden', type=int, default=32,
                         help='Number of hidden units.')
-    parser.add_argument('--batch-size', type=int, default=4,
+    parser.add_argument('--batch-size', type=int, default=128,
                         help='Size of batch.')
     parser.add_argument('--dropout', type=float, default=0.5,
                         help='Dropout rate.')
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     meta_labs, meta_graphs, meta_features, meta_y = read_meta_datasets(args.window, args.rand_weights)
     
     
-    for country in ["IT","ES","EN","FR"]:#,",
+    for country in ["NZ"]:#,",
         if(country=="IT"):
             idx = 0
 
@@ -117,7 +117,7 @@ if __name__ == '__main__':
             os.makedirs('../Predictions')
 
         
-        for args.model in ["ATMGNN"]:#
+        for args.model in ["ATMGNN","MPNN_LSTM"]:#
 			#---- predict days ahead , 0-> next day etc.
             for shift in list(range(0,args.ahead)):
 
@@ -244,7 +244,7 @@ if __name__ == '__main__':
                                 torch.save({
                                     'state_dict': model.state_dict(),
                                     'optimizer' : optimizer.state_dict(),
-                                }, '../Checkpoints/model_best_{}_shift{}_{}_RW_{}_seed{}.pth.tar'.format(args.model, shift, country, args.rand_weights, args.rand_seed))
+                                }, '../Checkpoints/model_best_{}_shift{}_{}_RW_{}_seed{}_econ.pth.tar'.format(args.model, shift, country, args.rand_weights, args.rand_seed))
 
                             scheduler.step(val_loss)
 
@@ -255,7 +255,7 @@ if __name__ == '__main__':
                     test_loss = AverageMeter()
 
                     #print("Loading checkpoint!")
-                    checkpoint = torch.load('../Checkpoints/model_best_{}_shift{}_{}_RW_{}_seed{}.pth.tar'.format(args.model, shift, country, args.rand_weights, args.rand_seed))
+                    checkpoint = torch.load('../Checkpoints/model_best_{}_shift{}_{}_RW_{}_seed{}_econ.pth.tar'.format(args.model, shift, country, args.rand_weights, args.rand_seed))
                     model.load_state_dict(checkpoint['state_dict'])
                     optimizer.load_state_dict(checkpoint['optimizer'])
                     model.eval()
@@ -280,7 +280,7 @@ if __name__ == '__main__':
                 print("{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(  np.sum(labels.iloc[:,args.start_exp:test_sample].mean(1))))
                 print("Aux metrics: {:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred)))
 
-                fw.write(str(args.model)+"_"+str(args.rand_weights)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
+                fw.write(str(args.model)+"_ECON_"+str(args.rand_weights)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
                 #fw.write(hypers+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
                 fw.close()
                 np.savetxt("../Predictions/predict_{}_shift{}_{}.csv".format(args.model, shift, country), y_pred, fmt="%.5f", delimiter=',')
