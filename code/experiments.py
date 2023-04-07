@@ -6,7 +6,7 @@ import time
 import argparse
 import networkx as nx
 import numpy as np
-
+import random
 
 import torch
 import torch.nn.functional as F
@@ -67,15 +67,20 @@ if __name__ == '__main__':
                         help='The number of days ahead of the train set the predictions should reach.')
     parser.add_argument('--sep', type=int, default=10,
                         help='Seperator for validation and train set.')
+    parser.add_argument('--rand-seed', type=int, default=0,
+                        help="Specify the random seeds for reproducibility.")
     
     args = parser.parse_args()
+    torch.manual_seed(args.rand_seed)
+    random.seed(args.rand_seed)
+    np.random.seed(args.rand_seed)
     device = torch.device("cuda" if torch.cuda.is_available() else torch.device("cpu"))
     
     
     meta_labs, meta_graphs, meta_features, meta_y = read_meta_datasets(args.window)
     
     
-    for country in ["IT","ES","EN","FR"]:#,",
+    for country in ["NZ"]:#,",
         if(country=="IT"):
             idx = 0
 
@@ -109,7 +114,7 @@ if __name__ == '__main__':
             os.makedirs('../Predictions')
 
         
-        for args.model in ["AVG","AVG_WINDOW","LAST_DAY"]:#
+        for args.model in ["RAND_FOREST","GAUSSIAN_REG","XGBOOST"]:#
             
             if(args.model=="PROPHET"):
 
@@ -151,7 +156,7 @@ if __name__ == '__main__':
             if(args.model=="RAND_FOREST"):
 
                 for shift_time in range(args.ahead):
-                    y_pred, y_true = rand_forest_time(args.start_exp,n_samples,labels,shift_time)
+                    y_pred, y_true = rand_forest_time(args.start_exp,n_samples,labels,shift_time,rand_seed=args.rand_seed)
                     fw = open("../results/results_"+country+"_baseline.csv","a")
                     #fw.write(args.model+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
                     fw.write("RAND_FOREST,"+str(shift_time)+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
@@ -163,7 +168,7 @@ if __name__ == '__main__':
             if(args.model=="GAUSSIAN_REG"):
 
                 for shift_time in range(args.ahead):
-                    y_pred, y_true = gaussian_reg_time(args.start_exp,n_samples,labels,shift_time)
+                    y_pred, y_true = gaussian_reg_time(args.start_exp,n_samples,labels,shift_time,rand_seed=args.rand_seed)
                     fw = open("../results/results_"+country+"_baseline.csv","a")
                     #fw.write(args.model+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
                     fw.write("GAUSSIAN_REG,"+str(shift_time)+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
@@ -175,7 +180,7 @@ if __name__ == '__main__':
             if(args.model=="XGBOOST"):
 
                 for shift_time in range(args.ahead):
-                    y_pred, y_true = xgboost(args.start_exp,n_samples,labels,shift_time)
+                    y_pred, y_true = xgboost(args.start_exp,n_samples,labels,shift_time,rand_seed=args.rand_seed)
                     fw = open("../results/results_"+country+"_baseline.csv","a")
                     #fw.write(args.model+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
                     fw.write("XGBOOST,"+str(shift_time)+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
