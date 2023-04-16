@@ -125,7 +125,7 @@ def rand_forest(start_exp,n_samples,labels,window,i_ahead,rand_seed=0):
             elif(X_train.shape[0]==0):
                 continue
             else:
-                reg = RandomForestRegressor(random_state=rand_seed).fit(X_train, y_train)
+                reg = RandomForestRegressor().fit(X_train, y_train)
                 p_ds = labels.iloc[j,test_sample-window-i_ahead+1:test_sample-i_ahead+1].reset_index()
                 p_input = np.array(p_ds.iloc[:,1])
                 yhat = reg.predict([p_input])
@@ -161,7 +161,7 @@ def gaussian_reg_time(start_exp,n_samples,labels,i_ahead,rand_seed=0):
             elif(X_train.shape[0]==0):
                 continue
             else:
-                reg = GaussianProcessRegressor(kernel=RBF(),random_state=rand_seed).fit(X_train, y_train)
+                reg = GaussianProcessRegressor(kernel=RBF()).fit(X_train, y_train)
                 yhat = reg.predict([[test_sample+i_ahead-1]])
             y_me = labels.iloc[j,test_sample+i_ahead-1]
             y_pred_arr = np.append(y_pred_arr, yhat)
@@ -229,7 +229,7 @@ def rand_forest_time(start_exp,n_samples,labels,i_ahead,rand_seed=0):
             elif(X_train.shape[0]==0):
                 continue
             else:
-                reg = RandomForestRegressor(random_state=rand_seed).fit(X_train, y_train)
+                reg = RandomForestRegressor().fit(X_train, y_train)
                 yhat = reg.predict([[test_sample+i_ahead-1]])
             y_me = labels.iloc[j,test_sample+i_ahead-1]
             y_pred_arr = np.append(y_pred_arr, yhat)
@@ -263,7 +263,7 @@ def xgboost(start_exp,n_samples,labels,i_ahead,rand_seed=0):
             elif(X_train.shape[0]==0):
                 continue
             else:
-                reg = XGBRegressor(n_estimators=1000, random_state=rand_seed).fit(X_train, y_train)
+                reg = XGBRegressor(n_estimators=1000).fit(X_train, y_train)
                 yhat = reg.predict([[test_sample+i_ahead-1]])
             y_me = labels.iloc[j,test_sample+i_ahead-1]
             y_pred_arr = np.append(y_pred_arr, yhat)

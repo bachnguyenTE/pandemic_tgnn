@@ -71,9 +71,9 @@ if __name__ == '__main__':
                         help="Specify the random seeds for reproducibility.")
     
     args = parser.parse_args()
-    torch.manual_seed(args.rand_seed)
-    random.seed(args.rand_seed)
-    np.random.seed(args.rand_seed)
+    # torch.manual_seed(args.rand_seed)
+    # random.seed(args.rand_seed)
+    # np.random.seed(args.rand_seed)
     device = torch.device("cuda" if torch.cuda.is_available() else torch.device("cpu"))
     
     

@@ -251,6 +251,44 @@ def read_meta_datasets(window,rand_weight=False):
 
     meta_y.append(y)
 
+
+    #---------------- New Zealand - LIMITED SET - ECON FALSE
+    os.chdir("../NZ_lim")
+    labels = pd.read_csv("newzealand_labels.csv")
+    #del labels["id"]
+    labels = labels.set_index("name")
+
+    sdate = date(2022, 3, 4)
+    edate = date(2022, 9, 4)
+    
+    #--- series of graphs and their respective dates
+    delta = edate - sdate
+    dates = [sdate + timedelta(days=i) for i in range(delta.days+1)]
+    dates = [str(date) for date in dates]
+    labels = labels.loc[:,dates]    #labels.sum(1).values>10
+
+    
+    
+    Gs = generate_graphs_tmp(dates,"NZ",rand_weight=True,dum=True)
+    gs_adj = [nx.adjacency_matrix(kgs).toarray().T for kgs in Gs]
+
+    labels = labels.loc[list(Gs[0].nodes()),:]
+    
+    meta_labs.append(labels)
+
+    meta_graphs.append(gs_adj)
+
+    features = generate_new_features(Gs ,labels ,dates ,window, economic=True, econ_feat=21)
+
+    meta_features.append(features)
+
+    y = list()
+    for i,G in enumerate(Gs):
+        y.append(list())
+        for node in G.nodes():
+            y[i].append(labels.loc[node,dates[i]])
+
+    meta_y.append(y)
     
     os.chdir("../../code")
 
@@ -258,12 +296,15 @@ def read_meta_datasets(window,rand_weight=False):
     
     
 
-def generate_graphs_tmp(dates,country,rand_weight=False):
+def generate_graphs_tmp(dates,country,rand_weight=False,dum=False):
     Gs = []
     for date in dates:
         d = pd.read_csv("graphs/"+country+"_"+date+".csv",header=None)
         G = nx.DiGraph()
-        nodes = set(d[0].unique()).union(set(d[1].unique()))
+        if dum:
+            nodes = set(['auckland', 'capital_and_coast_hutt', 'waikato'])  # special nz lim
+        else:
+            nodes = set(d[0].unique()).union(set(d[1].unique()))  
         nodes = sorted(nodes)
         G.add_nodes_from(nodes)
 
