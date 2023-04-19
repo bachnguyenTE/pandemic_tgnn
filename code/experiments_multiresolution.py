@@ -83,7 +83,7 @@ if __name__ == '__main__':
     meta_labs, meta_graphs, meta_features, meta_y = read_meta_datasets(args.window, args.rand_weights)
     
     
-    for country in ["NZ_LIM"]:#,",
+    for country in ["NZ"]:#,",
         if(country=="IT"):
             idx = 0
 

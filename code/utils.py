@@ -352,8 +352,8 @@ def generate_new_features(Gs, labels, dates, window=7, scaled=False, economic=Fa
         #  Features = population, coordinates, d past cases, one hot region
         
         if economic: # adding additional elements equal length of economic features
-            H = np.zeros([G.number_of_nodes(),window+econ_feat])
-            econ_data = pd.read_csv("gdp_2020_dhb_norm.csv")
+            H = np.zeros([G.number_of_nodes(),window+econ_feat*6])
+            econ_data = pd.read_csv("gdp_2020_dhb_mmnorm.csv")
             econ_data = econ_data.set_index("name")
             econ_data["ARR"] = econ_data["COMBINED"].apply(lambda x: np.fromstring(
                 x.replace('\n','')
@@ -392,6 +392,11 @@ def generate_new_features(Gs, labels, dates, window=7, scaled=False, economic=Fa
                 # perform matching inside the for loop since the variable 'node' is exactly the name of the region to be matched
                 econ_row = econ_data.loc[node]["ARR"]
                 H[i,(window):(window+econ_feat)] = np.fromstring(econ_row)
+                H[i,(window+econ_feat):(window+econ_feat*2)] = np.power(np.fromstring(econ_row),2) / np.max(np.power(np.fromstring(econ_row),2))
+                H[i,(window+econ_feat*2):(window+econ_feat*3)] = np.power(np.fromstring(econ_row),3) / np.max(np.power(np.fromstring(econ_row),3))
+                H[i,(window+econ_feat*3):(window+econ_feat*4)] = np.sqrt(np.fromstring(econ_row)) / np.max(np.sqrt(np.fromstring(econ_row)))
+                H[i,(window+econ_feat*4):(window+econ_feat*5)] = np.sin(np.fromstring(econ_row)) / np.max(np.sin(np.fromstring(econ_row)))
+                H[i,(window+econ_feat*5):(window+econ_feat*6)] = np.cos(np.fromstring(econ_row)) / np.max(np.cos(np.fromstring(econ_row)))
       
         features.append(H)
         
