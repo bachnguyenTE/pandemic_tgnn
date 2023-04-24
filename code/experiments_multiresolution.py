@@ -99,9 +99,6 @@ if __name__ == '__main__':
         elif(country=="NZ"):
             idx = 4
 
-        elif(country=="NZ_LIM"):
-            idx = 6
-            
             
         labels = meta_labs[idx]
         gs_adj = meta_graphs[idx]
@@ -247,7 +244,7 @@ if __name__ == '__main__':
                                 torch.save({
                                     'state_dict': model.state_dict(),
                                     'optimizer' : optimizer.state_dict(),
-                                }, '../Checkpoints/model_best_{}_shift{}_{}_RW_{}_seed{}_econ.pth.tar'.format(args.model, shift, country, args.rand_weights, args.rand_seed))
+                                }, '../Checkpoints/model_best_{}_shift{}_{}_RW_{}_seed{}_AG.pth.tar'.format(args.model, shift, country, args.rand_weights, args.rand_seed))
 
                             scheduler.step(val_loss)
 
@@ -258,7 +255,7 @@ if __name__ == '__main__':
                     test_loss = AverageMeter()
 
                     #print("Loading checkpoint!")
-                    checkpoint = torch.load('../Checkpoints/model_best_{}_shift{}_{}_RW_{}_seed{}_econ.pth.tar'.format(args.model, shift, country, args.rand_weights, args.rand_seed))
+                    checkpoint = torch.load('../Checkpoints/model_best_{}_shift{}_{}_RW_{}_seed{}_AG.pth.tar'.format(args.model, shift, country, args.rand_weights, args.rand_seed))
                     model.load_state_dict(checkpoint['state_dict'])
                     optimizer.load_state_dict(checkpoint['optimizer'])
                     model.eval()
@@ -284,7 +281,7 @@ if __name__ == '__main__':
                 print("Aux metrics: {:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred)))
 
                 #fw.write(str(args.model)+"_ECON_"+str(args.rand_weights)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
-                fw.write(str(args.model)+"_ECON_"+str(args.rand_weights)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
+                fw.write(str(args.model)+"_AG_"+str(args.rand_weights)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
                 #fw.write(hypers+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
                 fw.close()
                 np.savetxt("../Predictions/predict_{}_shift{}_{}.csv".format(args.model, shift, country), y_pred, fmt="%.5f", delimiter=',')

@@ -202,44 +202,7 @@ def read_meta_datasets(window,rand_weight=False):
 
     meta_graphs.append(gs_adj)
 
-    features = generate_new_features(Gs ,labels ,dates ,window, economic=True, econ_feat=21)
-
-    meta_features.append(features)
-
-    y = list()
-    for i,G in enumerate(Gs):
-        y.append(list())
-        for node in G.nodes():
-            y[i].append(labels.loc[node,dates[i]])
-
-    meta_y.append(y)
-
-    # Test set NZ, October data
-    labels = pd.read_csv("newzealand_labels.csv")
-    #del labels["id"]
-    labels = labels.set_index("name")
-
-    sdate = date(2022, 9, 4)
-    edate = date(2022, 11, 4)
-    
-    #--- series of graphs and their respective dates
-    delta = edate - sdate
-    dates = [sdate + timedelta(days=i) for i in range(delta.days+1)]
-    dates = [str(date) for date in dates]
-    labels = labels.loc[:,dates]    #labels.sum(1).values>10
-
-    
-    
-    Gs = generate_graphs_tmp(dates,"NZ",rand_weight)
-    gs_adj = [nx.adjacency_matrix(kgs).toarray().T for kgs in Gs]
-
-    labels = labels.loc[list(Gs[0].nodes()),:]
-    
-    meta_labs.append(labels)
-
-    meta_graphs.append(gs_adj)
-
-    features = generate_new_features(Gs ,labels ,dates ,window, economic=True, econ_feat=21)
+    features = generate_new_features(Gs ,labels ,dates ,window, age_group=True, group_num=9)
 
     meta_features.append(features)
 
@@ -252,43 +215,81 @@ def read_meta_datasets(window,rand_weight=False):
     meta_y.append(y)
 
 
-    #---------------- New Zealand - LIMITED SET - ECON FALSE
-    os.chdir("../NZ_lim")
-    labels = pd.read_csv("newzealand_labels.csv")
-    #del labels["id"]
-    labels = labels.set_index("name")
+    # # Test set NZ, October data
+    # labels = pd.read_csv("newzealand_labels.csv")
+    # #del labels["id"]
+    # labels = labels.set_index("name")
 
-    sdate = date(2022, 3, 4)
-    edate = date(2022, 9, 4)
+    # sdate = date(2022, 9, 4)
+    # edate = date(2022, 11, 4)
     
-    #--- series of graphs and their respective dates
-    delta = edate - sdate
-    dates = [sdate + timedelta(days=i) for i in range(delta.days+1)]
-    dates = [str(date) for date in dates]
-    labels = labels.loc[:,dates]    #labels.sum(1).values>10
+    # #--- series of graphs and their respective dates
+    # delta = edate - sdate
+    # dates = [sdate + timedelta(days=i) for i in range(delta.days+1)]
+    # dates = [str(date) for date in dates]
+    # labels = labels.loc[:,dates]    #labels.sum(1).values>10
 
     
     
-    Gs = generate_graphs_tmp(dates,"NZ",rand_weight=True,dum=True)
-    gs_adj = [nx.adjacency_matrix(kgs).toarray().T for kgs in Gs]
+    # Gs = generate_graphs_tmp(dates,"NZ",rand_weight)
+    # gs_adj = [nx.adjacency_matrix(kgs).toarray().T for kgs in Gs]
 
-    labels = labels.loc[list(Gs[0].nodes()),:]
+    # labels = labels.loc[list(Gs[0].nodes()),:]
     
-    meta_labs.append(labels)
+    # meta_labs.append(labels)
 
-    meta_graphs.append(gs_adj)
+    # meta_graphs.append(gs_adj)
 
-    features = generate_new_features(Gs ,labels ,dates ,window, economic=True, econ_feat=21)
+    # features = generate_new_features(Gs ,labels ,dates ,window, economic=True, econ_feat=21)
 
-    meta_features.append(features)
+    # meta_features.append(features)
 
-    y = list()
-    for i,G in enumerate(Gs):
-        y.append(list())
-        for node in G.nodes():
-            y[i].append(labels.loc[node,dates[i]])
+    # y = list()
+    # for i,G in enumerate(Gs):
+    #     y.append(list())
+    #     for node in G.nodes():
+    #         y[i].append(labels.loc[node,dates[i]])
 
-    meta_y.append(y)
+    # meta_y.append(y)
+
+
+    # #---------------- New Zealand - LIMITED SET - ECON FALSE
+    # os.chdir("../NZ_lim")
+    # labels = pd.read_csv("newzealand_labels.csv")
+    # #del labels["id"]
+    # labels = labels.set_index("name")
+
+    # sdate = date(2022, 3, 4)
+    # edate = date(2022, 9, 4)
+    
+    # #--- series of graphs and their respective dates
+    # delta = edate - sdate
+    # dates = [sdate + timedelta(days=i) for i in range(delta.days+1)]
+    # dates = [str(date) for date in dates]
+    # labels = labels.loc[:,dates]    #labels.sum(1).values>10
+
+    
+    
+    # Gs = generate_graphs_tmp(dates,"NZ",rand_weight=True,dum=True)
+    # gs_adj = [nx.adjacency_matrix(kgs).toarray().T for kgs in Gs]
+
+    # labels = labels.loc[list(Gs[0].nodes()),:]
+    
+    # meta_labs.append(labels)
+
+    # meta_graphs.append(gs_adj)
+
+    # features = generate_new_features(Gs ,labels ,dates ,window, economic=True, econ_feat=21)
+
+    # meta_features.append(features)
+
+    # y = list()
+    # for i,G in enumerate(Gs):
+    #     y.append(list())
+    #     for node in G.nodes():
+    #         y[i].append(labels.loc[node,dates[i]])
+
+    # meta_y.append(y)
     
     os.chdir("../../code")
 
@@ -327,7 +328,7 @@ def generate_graphs_tmp(dates,country,rand_weight=False,dum=False):
 
 
 
-def generate_new_features(Gs, labels, dates, window=7, scaled=False, economic=False, econ_feat=0):
+def generate_new_features(Gs, labels, dates, window=7, scaled=False, economic=False, econ_feat=0, age_group=False, group_num=0):
     """
     Generate node features
     Features[1] contains the features corresponding to y[1]
@@ -338,6 +339,15 @@ def generate_new_features(Gs, labels, dates, window=7, scaled=False, economic=Fa
     
     labs = labels.copy()
     nodes = Gs[0].nodes()
+    
+    labs_arr = []
+    if age_group:
+        for i in range(group_num):
+            age_labs = pd.read_csv("NZ_newcase_labels_group_{}.csv".format(i))
+            age_labs = age_labs.set_index("name")
+            age_labs = age_labs.loc[:,dates] 
+            age_labs = age_labs.loc[list(Gs[0].nodes()),:]
+            labs_arr.append(age_labs)
   
 
     #--- one hot encoded the region
@@ -361,6 +371,8 @@ def generate_new_features(Gs, labels, dates, window=7, scaled=False, economic=Fa
                 .replace(']','')
                 .replace('  ',' '), sep=' '
             ))
+        elif age_group:
+            H = np.zeros([G.number_of_nodes(),window+window*group_num])
         else: 
             H = np.zeros([G.number_of_nodes(),window])
 
@@ -397,6 +409,30 @@ def generate_new_features(Gs, labels, dates, window=7, scaled=False, economic=Fa
                 H[i,(window+econ_feat*3):(window+econ_feat*4)] = np.sqrt(np.fromstring(econ_row)) / np.max(np.sqrt(np.fromstring(econ_row)))
                 H[i,(window+econ_feat*4):(window+econ_feat*5)] = np.sin(np.fromstring(econ_row)) / np.max(np.sin(np.fromstring(econ_row)))
                 H[i,(window+econ_feat*5):(window+econ_feat*6)] = np.cos(np.fromstring(econ_row)) / np.max(np.cos(np.fromstring(econ_row)))
+
+        if age_group:
+            for n in range(1,group_num+1):
+                age_lab = labs_arr[n-1]
+                me = age_lab.loc[:, dates[:(idx)]].mean(1)
+                sd = age_lab.loc[:, dates[:(idx)]].std(1)+1
+
+                ### enumarate because H[i] and labs[node] are not aligned
+                for i,node in enumerate(G.nodes()):
+                    # print("i: {}".format(i))
+                    # print("node: {}".format(node))
+                    #---- Past cases      
+                    if(idx < window):# idx-1 goes before the start of the labels
+                        if(scaled):
+                            #me = np.mean(labs.loc[node, dates[0:(idx)]]
+                            H[i,(window*(n+1)-idx):(window*(n+1))] = (age_lab.loc[node, dates[0:(idx)]] - me[node])/ sd[node]
+                        else:
+                            H[i,(window*(n+1)-idx):(window*(n+1))] = age_lab.loc[node, dates[0:(idx)]]
+
+                    elif idx >= window:
+                        if(scaled):
+                            H[i,(window*n):(window*(n+1))] =  (age_lab.loc[node, dates[(idx-window):(idx)]] - me[node])/ sd[node]
+                        else:
+                            H[i,(window*n):(window*(n+1))] = age_lab.loc[node, dates[(idx-window):(idx)]]
       
         features.append(H)
         
