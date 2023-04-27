@@ -18,8 +18,8 @@ import itertools
 import pandas as pd
 
 
-from utils import generate_new_features, generate_new_batches, AverageMeter, generate_batches_lstm, read_meta_datasets
-from models_multiresolution import MGNN, ATMGNN, TMGNN
+from utils import generate_new_features, generate_new_batches, AverageMeter, generate_batches_lstm, read_meta_datasets, generate_new_batches_group
+from models_multiresolution import MGNN, ATMGNN, TMGNN, ATMGNN_GROUPED
 from models import MPNN_LSTM, MPNN
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
         
@@ -28,6 +28,26 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 def train(epoch, adj, features, y):
     optimizer.zero_grad()
     output = model(adj, features)
+    # print("output: {}".format(output.shape))
+    # print("y: {}".format(y.shape))
+    loss_train = F.mse_loss(output, y)
+    loss_train.backward(retain_graph=True)
+    optimizer.step()
+    # exit()
+    return output, loss_train
+
+
+
+def train_grouped(epoch, adj, features, y_2d):
+    optimizer.zero_grad()
+    output, output_2d = model(adj, features)
+    # print("output: {}".format(output.shape))
+    # print("output_2d: {}".format(output_2d.shape))
+    # print("y_2d: {}".format(y_2d.shape))
+    output = torch.reshape(output_2d, (int(y_2d.shape[0]/20),20,10))
+    output = torch.sum(output,2)
+    y = torch.reshape(y_2d, (int(y_2d.shape[0]/20),20,10))
+    y = torch.sum(y,2)
     loss_train = F.mse_loss(output, y)
     loss_train.backward(retain_graph=True)
     optimizer.step()
@@ -39,6 +59,17 @@ def test(adj, features, y):
     output = model(adj, features)
     loss_test = F.mse_loss(output, y)
     return output, loss_test
+
+
+def test_grouped(adj, features, y):    
+    output, output_2d = model(adj, features)
+    output = torch.reshape(output_2d, (int(y.shape[0]/20),20,10))
+    output = torch.sum(output,2)
+    y = torch.reshape(y, (int(y.shape[0]/20),20,10))
+    y = torch.sum(y,2)
+    loss_test = F.mse_loss(output, y)
+    return output, loss_test
+
 
 
 
@@ -83,7 +114,7 @@ if __name__ == '__main__':
     meta_labs, meta_graphs, meta_features, meta_y = read_meta_datasets(args.window, args.rand_weights)
     
     
-    for country in ["NZ"]:#,",
+    for country in ["NZ_GROUPED"]:#,",
         if(country=="IT"):
             idx = 0
 
@@ -98,6 +129,9 @@ if __name__ == '__main__':
 
         elif(country=="NZ"):
             idx = 4
+
+        else:
+            idx = 5
 
             
         labels = meta_labs[idx]
@@ -117,7 +151,7 @@ if __name__ == '__main__':
             os.makedirs('../Predictions')
 
         
-        for args.model in ["ATMGNN","MPNN_LSTM"]:#
+        for args.model in ["ATMGNN_GROUPED"]:#
 			#---- predict days ahead , 0-> next day etc.
             for shift in list(range(0,args.ahead)):
 
@@ -145,6 +179,11 @@ if __name__ == '__main__':
                         adj_val, features_val, y_val = generate_new_batches(gs_adj, features, y, idx_val, args.graph_window,  shift,args.batch_size, device,test_sample)
                         adj_test, features_test, y_test = generate_new_batches(gs_adj, features, y,  [test_sample], args.graph_window,shift, args.batch_size, device,test_sample)
 
+                    elif(args.model=="ATMGNN_GROUPED"):
+                        adj_train, features_train, y_train = generate_new_batches_group(gs_adj, features, y, idx_train, args.graph_window, shift, args.batch_size,device,test_sample)
+                        adj_val, features_val, y_val = generate_new_batches_group(gs_adj, features, y, idx_val, args.graph_window,  shift,args.batch_size, device,test_sample)
+                        adj_test, features_test, y_test = generate_new_batches_group(gs_adj, features, y,  [test_sample], args.graph_window,shift, args.batch_size, device,test_sample)
+
                     elif(args.model=="MPNN_LSTM"):
                         adj_train, features_train, y_train = generate_new_batches(gs_adj, features, y, idx_train, args.graph_window, shift, args.batch_size,device,test_sample)
                         adj_val, features_val, y_val = generate_new_batches(gs_adj, features, y, idx_val, args.graph_window,  shift,args.batch_size, device,test_sample)
@@ -168,6 +207,10 @@ if __name__ == '__main__':
                         if(args.model=="ATMGNN"):
 
                             model = ATMGNN(nfeat=nfeat, nhid=args.hidden, nout=1, n_nodes=n_nodes, window=args.graph_window, dropout=args.dropout, nhead=1).to(device)
+
+                        if(args.model=="ATMGNN_GROUPED"):
+
+                            model = ATMGNN_GROUPED(nfeat=nfeat, nhid=args.hidden, nout=1, n_nodes=n_nodes, window=args.graph_window, dropout=args.dropout, nhead=1).to(device)
 
                         elif(args.model=="MPNN_LSTM"):
 
@@ -202,14 +245,20 @@ if __name__ == '__main__':
 
                             # Train for one epoch
                             for batch in range(n_train_batches):
-                                output, loss = train(epoch, adj_train[batch], features_train[batch], y_train[batch])
+                                if args.model=="ATMGNN_GROUPED":
+                                    output, loss = train_grouped(epoch, adj_train[batch], features_train[batch], y_train[batch])
+                                else:
+                                    output, loss = train(epoch, adj_train[batch], features_train[batch], y_train[batch])
                                 train_loss.update(loss.data.item(), output.size(0))
 
                             # Evaluate on validation set
                             model.eval()
 
                             #for i in range(n_val_batches):
-                            output, val_loss = test(adj_val[0], features_val[0], y_val[0])
+                            if args.model == "ATMGNN_GROUPED":
+                                output, val_loss = test_grouped(adj_val[0], features_val[0], y_val[0])
+                            else:
+                                output, val_loss = test(adj_val[0], features_val[0], y_val[0])
                             val_loss = float(val_loss.detach().cpu().numpy())
 
 
@@ -262,10 +311,16 @@ if __name__ == '__main__':
 
                     #error= 0
                     #for batch in range(n_test_batches):
-                    output, loss = test(adj_test[0], features_test[0], y_test[0])
+                    if args.model == "ATMGNN_GROUPED":
+                        output, loss = test_grouped(adj_test[0], features_test[0], y_test[0])
+                    else:
+                        output, loss = test(adj_test[0], features_test[0], y_test[0])
 
                     o = output.cpu().detach().numpy()
                     l = y_test[0].cpu().numpy()
+                    if args.model == "ATMGNN_GROUPED":
+                        o = np.reshape(o, (n_nodes,))
+                        l = np.sum(l, axis=1)
 
 	            # average error per region
                     error = np.sum(abs(o-l))/n_nodes

@@ -212,8 +212,60 @@ def read_meta_datasets(window,rand_weight=False):
         for node in G.nodes():
             y[i].append(labels.loc[node,dates[i]])
 
+    print("data Y: {}".format(np.array(y).shape))
+
     meta_y.append(y)
 
+
+
+    #---------------- New Zealand (with age groups)
+    os.chdir("../NewZealand")
+    labels = pd.read_csv("newzealand_labels.csv")
+    #del labels["id"]
+    labels = labels.set_index("name")
+
+    sdate = date(2022, 3, 4)
+    edate = date(2022, 9, 4)
+    
+    #--- series of graphs and their respective dates
+    delta = edate - sdate
+    dates = [sdate + timedelta(days=i) for i in range(delta.days+1)]
+    dates = [str(date) for date in dates]
+    labels = labels.loc[:,dates]    #labels.sum(1).values>10
+
+    
+    
+    Gs = generate_graphs_tmp(dates,"NZ",rand_weight)
+    gs_adj = [nx.adjacency_matrix(kgs).toarray().T for kgs in Gs]
+
+    labels = labels.loc[list(Gs[0].nodes()),:]
+    
+    meta_labs.append(labels)
+
+    meta_graphs.append(gs_adj)
+
+    features = generate_new_features(Gs ,labels ,dates ,window, age_group=True, group_num=10)
+
+    meta_features.append(features)
+
+    labels = pd.read_csv("NZ_newcase_labels_grouped.csv")
+    labels = labels.set_index("name")
+    for date1 in dates:
+        labels[date1] = labels[date1].apply(lambda x: np.fromstring(
+            x.replace('\n','')
+            .replace('[','')
+            .replace(']','')
+            .replace('  ',' '), sep=','
+        ))
+    y = list()
+    for i,G in enumerate(Gs):
+        y.append(list())
+        for node in G.nodes():
+            y[i].append(labels.loc[node,dates[i]])
+    
+    print("data Y group: {}".format(np.array(y).shape))
+
+    meta_y.append(y)
 
     # # Test set NZ, October data
     # labels = pd.read_csv("newzealand_labels.csv")
@@ -497,6 +549,61 @@ def generate_new_batches(Gs, features, y, idx, graph_window, shift, batch_size, 
     return adj_lst, features_lst, y_lst
 
 
+
+
+
+def generate_new_batches_group(Gs, features, y, idx, graph_window, shift, batch_size, device, test_sample, num_group=10):
+    """
+    Generate batches for graphs for MPNN
+    """
+
+    N = len(idx)
+    n_nodes = Gs[0].shape[0]
+    #n_nodes = Gs[0].number_of_nodes()
+  
+    adj_lst = list()
+    features_lst = list()
+    y_lst = list()
+
+    for i in range(0, N, batch_size):
+        n_nodes_batch = (min(i+batch_size, N)-i)*graph_window*n_nodes
+        step = n_nodes*graph_window
+
+        adj_tmp = list()
+        features_tmp = np.zeros((n_nodes_batch, features[0].shape[1]))
+
+        y_tmp = np.zeros(((min(i+batch_size, N)-i)*n_nodes,num_group))
+
+        #fill the input for each batch
+        for e1,j in enumerate(range(i, min(i+batch_size, N) )):
+            val = idx[j]
+
+            # Feature[10] containes the previous 7 cases of y[10]
+            for e2,k in enumerate(range(val-graph_window+1,val+1)):
+                
+                adj_tmp.append(Gs[k-1].T)  
+                # each feature has a size of n_nodes
+                features_tmp[(e1*step+e2*n_nodes):(e1*step+(e2+1)*n_nodes),:] = features[k]#-features[val-graph_window-1]
+            
+            
+            if(test_sample>0):
+                #--- val is by construction less than test sample
+                if(val+shift<test_sample):
+                    y_tmp[(n_nodes*e1):(n_nodes*(e1+1))] = y[val+shift]
+                    
+                else:
+                    y_tmp[(n_nodes*e1):(n_nodes*(e1+1))] = y[val]
+                        
+                        
+            else:
+                y_tmp[(n_nodes*e1):(n_nodes*(e1+1))] = y[val+shift]
+        
+        adj_tmp = sp.block_diag(adj_tmp)
+        adj_lst.append(sparse_mx_to_torch_sparse_tensor(adj_tmp).to(device))
+        features_lst.append(torch.FloatTensor(features_tmp).to(device))
+        y_lst.append(torch.FloatTensor(y_tmp).to(device))
+
+    return adj_lst, features_lst, y_lst
 
 
 
