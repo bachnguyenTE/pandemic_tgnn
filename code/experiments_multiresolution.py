@@ -55,7 +55,7 @@ def train_grouped(epoch, adj, features, y_2d, weighted=False):
         sum_of_rows = NZ_age_group_arr.sum(axis=1)
         NZ_norm_grouped = NZ_age_group_arr / sum_of_rows[:, np.newaxis]
         dup_NZ_norm_grouped = np.tile(NZ_norm_grouped, (int(y_2d.shape[0]/20),1,1))
-        age_weights = torch.from_numpy(dup_NZ_norm_grouped)
+        age_weights = torch.from_numpy(dup_NZ_norm_grouped).float().to(device)
         output = torch.mul(output, age_weights)
         y = torch.mul(y, age_weights)
         
@@ -349,7 +349,7 @@ if __name__ == '__main__':
                 print("Aux metrics: {:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred)))
 
                 #fw.write(str(args.model)+"_ECON_"+str(args.rand_weights)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
-                fw.write(str(args.model)+"_AGW_"+str(args.rand_weights)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
+                fw.write(str(args.model)+"_AGWR_"+str(args.rand_weights)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
                 #fw.write(hypers+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
                 fw.close()
                 np.savetxt("../Predictions/predict_{}_shift{}_{}.csv".format(args.model, shift, country), y_pred, fmt="%.5f", delimiter=',')
