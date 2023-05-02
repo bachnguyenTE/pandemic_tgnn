@@ -52,9 +52,17 @@ def train_grouped(epoch, adj, features, y_2d, weighted=False):
         nz_age_group = pd.read_csv("../data/NewZealand/NZ_age_group.csv")
         NZ_age_group_arr = nz_age_group['Population'].to_numpy()
         NZ_age_group_arr = NZ_age_group_arr.reshape((20,10))
-        sum_of_rows = NZ_age_group_arr.sum(axis=1)
-        NZ_norm_grouped = NZ_age_group_arr / sum_of_rows[:, np.newaxis]
-        dup_NZ_norm_grouped = np.tile(NZ_norm_grouped, (int(y_2d.shape[0]/20),1,1))
+
+        # Sum normalization 
+        # sum_of_rows = NZ_age_group_arr.sum(axis=1)
+        # NZ_norm_grouped = NZ_age_group_arr / sum_of_rows[:, np.newaxis]
+
+        # Min-max normalization
+        diff_of_rows = np.ptp(NZ_age_group_arr, axis=1)
+        min_of_rows = NZ_age_group_arr.min(axis=1)
+        NZ_mmnorm_grouped = (NZ_age_group_arr - min_of_rows[:, None]) / diff_of_rows[:, np.newaxis]
+
+        dup_NZ_norm_grouped = np.tile(NZ_mmnorm_grouped, (int(y_2d.shape[0]/20),1,1))
         age_weights = torch.from_numpy(dup_NZ_norm_grouped).float().to(device)
         output = torch.mul(output, age_weights)
         y = torch.mul(y, age_weights)
@@ -349,7 +357,7 @@ if __name__ == '__main__':
                 print("Aux metrics: {:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred)))
 
                 #fw.write(str(args.model)+"_ECON_"+str(args.rand_weights)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
-                fw.write(str(args.model)+"_AGWR_"+str(args.rand_weights)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
+                fw.write(str(args.model)+"_AGW_MMR_"+str(args.rand_weights)+","+str(shift)+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+",{:.5f}".format(mean_absolute_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred))+",{:.5f}".format(mean_squared_error(y_true, y_pred, squared=False))+",{:.5f}".format(r2_score(y_true, y_pred))+"\n")
                 #fw.write(hypers+",{:.5f}".format(np.mean(result))+",{:.5f}".format(np.std(result))+"\n")
                 fw.close()
                 np.savetxt("../Predictions/predict_{}_shift{}_{}.csv".format(args.model, shift, country), y_pred, fmt="%.5f", delimiter=',')
